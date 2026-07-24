@@ -9,6 +9,7 @@ import { AdminsPage } from '@/pages/admins/AdminsPage';
 import { RoutesPage } from '@/pages/routes/RoutesPage';
 import { StopsPage } from '@/pages/stops/StopsPage';
 import { BusesPage } from '@/pages/buses/BusesPage';
+import { DriversPage } from '@/pages/drivers/DriversPage';
 import { LiveOperationsPage } from '@/pages/live/LiveOperationsPage';
 import { SchedulesPage } from '@/pages/schedules/SchedulesPage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="routes" element={<RoutesPage />} />
         <Route path="stops" element={<StopsPage />} />
         <Route path="buses" element={<BusesPage />} />
+        <Route path="drivers" element={<DriversPage />} />
         <Route path="live" element={<LiveOperationsPage />} />
         <Route path="schedules" element={<SchedulesPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

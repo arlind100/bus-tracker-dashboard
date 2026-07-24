@@ -14,7 +14,7 @@
 // the Firebase SDK directly into a component.
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -38,7 +38,22 @@ export const firebaseApp: FirebaseApp = getApps().length === 0
   ? initializeApp(firebaseConfig)
   : getApp();
 
-export const db: Firestore = getFirestore(firebaseApp);
+// ignoreUndefinedProperties: the form dialogs send `undefined` for cleared
+// optional fields (e.g. "No agency" in a select). Without this, updateDoc /
+// batch.update REJECT the entire write with "Unsupported field value:
+// undefined", so a single empty optional silently fails the whole save.
+// Skipping undefined keys makes those partial updates behave as intended.
+// initializeFirestore must run before any getFirestore call — this module is
+// the single init point, and it re-uses the existing instance on hot reload.
+export const db: Firestore = (() => {
+  try {
+    return initializeFirestore(firebaseApp, { ignoreUndefinedProperties: true });
+  } catch {
+    // Throws if Firestore was already initialized for this app (hot reload) —
+    // reuse the existing instance, which already carries the setting.
+    return getFirestore(firebaseApp);
+  }
+})();
 
 // Web default persistence = browserLocalPersistence (IndexedDB/localStorage):
 // the signed-in session survives reloads and browser restarts automatically.

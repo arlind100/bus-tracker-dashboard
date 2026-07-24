@@ -57,7 +57,7 @@ export const stopsService = {
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as Stop) : null;
   },
 
-  async create(input: StopInput): Promise<string> {
+  async create(input: StopInput, actorUid?: string): Promise<string> {
     const now = Date.now();
     const routeId = input.routeId ?? '';
     const order = input.order ?? 1;
@@ -77,12 +77,17 @@ export const stopsService = {
       source: 'dashboard-created',
       createdAt: now,
       updatedAt: now,
+      ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
     });
     return id;
   },
 
-  async update(id: string, patch: Partial<StopInput>): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.stops, id), { ...patch, updatedAt: Date.now() });
+  async update(id: string, patch: Partial<StopInput>, actorUid?: string): Promise<void> {
+    await updateDoc(doc(db, COLLECTIONS.stops, id), {
+      ...patch,
+      updatedAt: Date.now(),
+      ...(actorUid ? { updatedBy: actorUid } : {}),
+    });
   },
 
   async remove(id: string): Promise<void> {

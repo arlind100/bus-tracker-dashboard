@@ -102,6 +102,9 @@ export interface Route {
   source?: string;
   createdAt?: number;
   updatedAt?: number;
+  /** Attribution for cross-agency editing (uid of the acting admin). */
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 // ─── stops ───────────────────────────────────────────────────────────────────
@@ -124,6 +127,9 @@ export interface Stop {
   source?: string;
   createdAt?: number;
   updatedAt?: number;
+  /** Attribution for cross-agency editing (uid of the acting admin). */
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 // ─── schedules ───────────────────────────────────────────────────────────────
@@ -142,6 +148,36 @@ export interface Schedule {
   updatedAt?: number;
 }
 
+// ─── drivers (dashboard-only personnel collection) ───────────────────────────
+
+export type DriverStatus = 'active' | 'inactive' | 'on_leave';
+
+/**
+ * A real driver record, replacing the free-text `buses.driver` string as the
+ * source of truth. Contains PII (licence, phone) and is admin-only in the
+ * security rules — the passenger app never reads it.
+ *
+ * Compatibility: assigning a driver to a bus writes BOTH `buses.driverId` (the
+ * reference) and `buses.driver` (the name string the mobile app still renders),
+ * so the mobile app keeps working unchanged.
+ */
+export interface Driver {
+  id: string;
+  name: string;
+  agencyId?: string;
+  licenseNumber?: string;
+  phone?: string;
+  email?: string;
+  /** Bus this driver is currently assigned to (bus doc id). */
+  assignedBusId?: string;
+  status?: DriverStatus;
+  notes?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
 // ─── buses ───────────────────────────────────────────────────────────────────
 
 export type BusStatus = 'Active' | 'Offline' | 'Maintenance';
@@ -154,7 +190,13 @@ export interface Bus {
   route?: string;
   plate?: string;
   busNumber?: string;
+  /**
+   * Driver NAME, denormalized. Kept because the mobile app renders this string
+   * directly — never remove it. `driverId` is the authoritative reference.
+   */
   driver?: string;
+  /** Reference into `drivers`. Additive; absent on mobile-created buses. */
+  driverId?: string;
   status?: BusStatus;
   capacity?: number;
   currentStop?: string;
@@ -162,6 +204,8 @@ export interface Bus {
   progress?: number;
   createdAt?: number;
   updatedAt?: number;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 // ─── busLocations (1:1 with buses; doc id == bus id) ─────────────────────────────

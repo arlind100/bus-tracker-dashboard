@@ -5,6 +5,7 @@
 import type { BadgeProps } from '@/components/ui/badge';
 import type {
   BusStatus,
+  DriverStatus,
   IssueKind,
   IssueStatus,
   NotificationKind,
@@ -31,6 +32,18 @@ export const BUS_STATUS_VARIANT: Record<BusStatus, BadgeVariant> = {
   Active: 'success',
   Offline: 'neutral',
   Maintenance: 'warning',
+};
+
+export const DRIVER_STATUSES: DriverStatus[] = ['active', 'inactive', 'on_leave'];
+export const DRIVER_STATUS_LABEL: Record<DriverStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  on_leave: 'On leave',
+};
+export const DRIVER_STATUS_VARIANT: Record<DriverStatus, BadgeVariant> = {
+  active: 'success',
+  inactive: 'neutral',
+  on_leave: 'warning',
 };
 
 export const ISSUE_STATUSES: IssueStatus[] = [

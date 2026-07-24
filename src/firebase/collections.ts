@@ -18,6 +18,9 @@ export const COLLECTIONS = {
   issueReports:  'issueReports',
   notifications: 'notifications',
   adminUpdates:  'adminUpdates',
+  // Dashboard-only personnel collection. The mobile app does not read it — it
+  // renders the denormalized `buses.driver` name string instead.
+  drivers:       'drivers',
 } as const;
 
 export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];

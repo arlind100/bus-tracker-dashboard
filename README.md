@@ -51,7 +51,9 @@ src/
   hooks/         useAuth · useTheme
   components/    ProtectedRoute · PageHeader · StatCard · ui/* (shadcn-style)
   layouts/       DashboardLayout · Sidebar · Topbar
-  pages/         LoginPage · OverviewPage · (Phase 2 pages)
+  pages/         LoginPage · OverviewPage · agencies · admins · routes · stops ·
+                 buses · drivers · live · schedules · notifications · issues ·
+                 analytics
   config/        navigation.ts (sidebar structure)
 ```
 
@@ -61,7 +63,7 @@ src/
 ### Services (one per collection)
 
 `auth` · `dashboard` · `agencies` · `admins` · `routes` · `stops` · `buses` ·
-`schedules` · `issues` · `notifications` · `live`
+`drivers` · `schedules` · `issues` · `notifications` · `live`
 
 Each returns typed data and wraps multi-document writes in `writeBatch` where
 appropriate (e.g. `routes.createWithStops`, `routes.remove`). Mutating actions
@@ -99,10 +101,30 @@ required additive rule changes. **These are applied and deployed as of
 admin-write block, and `admins` writes moved from `if false` to `if isSuperAdmin()`.
 Both features work against the live backend now.
 
+A third rule was added and deployed for the new `drivers` collection. Unlike the
+public transit collections, drivers hold **PII** (licence, phone), so the rule is
+`allow read, write: if isAdmin()` — deliberately **not** world-readable. The
+passenger app never reads it; it renders the denormalized `buses.driver` name.
+
 The rules live in the mobile repo (`bus-tracker/firestore.rules`) because they are
 shared project-wide; deploy any future change from there with
 `firebase deploy --only firestore:rules`. Design rationale and the safety notes
 are in [`docs/PROPOSED_FIRESTORE_RULES.md`](docs/PROPOSED_FIRESTORE_RULES.md).
+
+## Drivers ↔ buses
+
+`drivers` replaces the free-text `buses.driver` string as the source of truth,
+but **does not remove it**. Every assignment writes both sides in a `writeBatch`:
+
+| Field | Purpose |
+|-------|---------|
+| `buses.driverId` | reference into `drivers` (dashboard truth) |
+| `buses.driver` | the driver's NAME — what the mobile app renders. Never drop it. |
+
+Renaming a driver refreshes the assigned bus's `driver` string, and deleting a
+driver (or a bus) clears the other side, so the two can never disagree. Buses
+created before this collection existed keep their legacy free-text name; the bus
+form surfaces it as a hint rather than silently discarding it.
 
 ## What NOT to change
 

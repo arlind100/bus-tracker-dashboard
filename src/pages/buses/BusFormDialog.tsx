@@ -7,7 +7,9 @@ import { toast } from 'sonner';
 import { busesService, type BusInput } from '@/services/buses.service';
 import { agenciesService } from '@/services/agencies.service';
 import { routesService } from '@/services/routes.service';
+import { driversService } from '@/services/drivers.service';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +40,7 @@ const schema = z.object({
   routeId: z.string(),
   plate: z.string().optional(),
   busNumber: z.string().optional(),
-  driver: z.string().optional(),
+  driverId: z.string(),
   status: z.enum(['Active', 'Offline', 'Maintenance']),
   capacity: z
     .string()
@@ -59,10 +61,13 @@ export function BusFormDialog({
 }) {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
   const isEdit = !!bus;
 
   const { data: agencies } = useQuery({ queryKey: ['agencies'], queryFn: () => agenciesService.list(), enabled: open });
   const { data: routes } = useQuery({ queryKey: ['routes'], queryFn: () => routesService.list(), enabled: open });
+  const { data: driversData } = useQuery({ queryKey: ['drivers'], queryFn: () => driversService.list(), enabled: open });
+  const drivers = driversData?.drivers ?? [];
 
   const {
     register,
@@ -72,7 +77,7 @@ export function BusFormDialog({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { agencyId: NONE, routeId: NONE, plate: '', busNumber: '', driver: '', status: 'Offline', capacity: '' },
+    defaultValues: { agencyId: NONE, routeId: NONE, plate: '', busNumber: '', driverId: NONE, status: 'Offline', capacity: '' },
   });
 
   useEffect(() => {
@@ -82,7 +87,7 @@ export function BusFormDialog({
         routeId: bus?.routeId || NONE,
         plate: bus?.plate ?? '',
         busNumber: bus?.busNumber ?? '',
-        driver: bus?.driver ?? '',
+        driverId: bus?.driverId || NONE,
         status: (bus?.status as BusStatus) ?? 'Offline',
         capacity: bus?.capacity != null ? String(bus.capacity) : '',
       });
@@ -91,25 +96,40 @@ export function BusFormDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      // The driver pairing is NOT written here — it goes through
+      // driversService.assignToBus so the drivers side stays consistent and the
+      // denormalized `buses.driver` name the mobile app renders stays correct.
       const payload: BusInput = {
         agencyId: values.agencyId === NONE ? undefined : values.agencyId,
         routeId: values.routeId === NONE ? undefined : values.routeId,
         plate: values.plate,
         busNumber: values.busNumber,
-        driver: values.driver,
         status: values.status,
         capacity: values.capacity?.trim() ? Number(values.capacity) : undefined,
       };
+
+      const selectedDriverId = values.driverId === NONE ? null : values.driverId;
+      const busId = isEdit && bus ? bus.id : await busesService.create(payload, user?.uid);
+
       if (isEdit && bus) {
-        await busesService.update(bus.id, payload);
+        await busesService.update(bus.id, payload, user?.uid);
         await audit('bus_update', `Updated bus ${values.busNumber || bus.id}`, bus.id);
-        return;
+      } else {
+        await audit('bus_create', `Created bus ${values.busNumber || busId}`, busId);
       }
-      const id = await busesService.create(payload);
-      await audit('bus_create', `Created bus ${values.busNumber || id}`, id);
+
+      const previousDriverId = bus?.driverId || null;
+      if (selectedDriverId !== previousDriverId) {
+        if (selectedDriverId) {
+          await driversService.assignToBus(selectedDriverId, busId, user?.uid);
+        } else if (previousDriverId) {
+          await driversService.assignToBus(previousDriverId, null, user?.uid);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buses'] });
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
       queryClient.invalidateQueries({ queryKey: ['live-data'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(isEdit ? 'Bus updated' : 'Bus created');
@@ -176,8 +196,29 @@ export function BusFormDialog({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <FormField label="Driver" htmlFor="driver">
-              <Input id="driver" placeholder="Full name" {...register('driver')} />
+            <FormField
+              label="Driver"
+              hint={
+                // Surfaces a legacy free-text name from a bus created before the
+                // drivers collection existed, so it is not silently dropped.
+                !bus?.driverId && bus?.driver ? `Currently: ${bus.driver}` : undefined
+              }
+            >
+              <Controller
+                control={control}
+                name="driverId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="No driver" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>No driver</SelectItem>
+                      {drivers.map(d => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
             <FormField label="Status">
               <Controller

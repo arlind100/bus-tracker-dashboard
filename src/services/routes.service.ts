@@ -62,7 +62,7 @@ export const routesService = {
     return snap.exists() ? (snap.data() as Route) : null;
   },
 
-  async create(input: RouteInput): Promise<string> {
+  async create(input: RouteInput, actorUid?: string): Promise<string> {
     const now = Date.now();
     const id = `route_admin_${now}`;
     const status: RouteStatus = input.status ?? 'On time';
@@ -88,6 +88,7 @@ export const routesService = {
       source: 'dashboard-created',
       createdAt: now,
       updatedAt: now,
+      ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
     });
     return id;
   },
@@ -97,7 +98,10 @@ export const routesService = {
    * the mobile routeCreator.createRouteWithStops so a partial write can't leave
    * a route with no stops. Stops are linked by routeId and shaped like seeds.
    */
-  async createWithStops(input: RouteInput & { stopSeeds: StopSeed[] }): Promise<{ routeId: string; stopCount: number }> {
+  async createWithStops(
+    input: RouteInput & { stopSeeds: StopSeed[] },
+    actorUid?: string,
+  ): Promise<{ routeId: string; stopCount: number }> {
     const now = Date.now();
     const routeId = `route_admin_${now}`;
     const status: RouteStatus = input.status ?? 'On time';
@@ -127,6 +131,7 @@ export const routesService = {
       source: 'dashboard-created',
       createdAt: now,
       updatedAt: now,
+      ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
     });
 
     input.stopSeeds.forEach((stop, i) => {
@@ -147,6 +152,7 @@ export const routesService = {
         source: 'dashboard-created',
         createdAt: now,
         updatedAt: now,
+        ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
       });
     });
 
@@ -154,21 +160,23 @@ export const routesService = {
     return { routeId, stopCount: input.stopSeeds.length };
   },
 
-  async update(id: string, patch: Partial<RouteInput>): Promise<void> {
+  async update(id: string, patch: Partial<RouteInput>, actorUid?: string): Promise<void> {
     const data: Record<string, unknown> = { ...patch, updatedAt: Date.now() };
     if (patch.status) {
       data.st = ST_BY_STATUS[patch.status];
       data.isActive = patch.status !== 'Offline';
     }
+    if (actorUid) data.updatedBy = actorUid;
     await updateDoc(doc(db, COLLECTIONS.routes, id), data);
   },
 
-  async setStatus(id: string, status: RouteStatus): Promise<void> {
+  async setStatus(id: string, status: RouteStatus, actorUid?: string): Promise<void> {
     await updateDoc(doc(db, COLLECTIONS.routes, id), {
       status,
       st: ST_BY_STATUS[status],
       isActive: status !== 'Offline',
       updatedAt: Date.now(),
+      ...(actorUid ? { updatedBy: actorUid } : {}),
     });
   },
 
