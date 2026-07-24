@@ -1,0 +1,54 @@
+import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '@/firebase/config';
+import { authService } from '@/services/auth.service';
+import { AuthContext, type AuthStatus } from '@/contexts/auth-context';
+import type { AppUser } from '@/types';
+
+/**
+ * Owns the single onAuthStateChanged subscription for the whole app. On every
+ * auth-state change it re-verifies admin access against admins/{uid} (mirroring
+ * the mobile (admin)/_layout guard): a signed-in user who is NOT a valid admin
+ * is signed back out and treated as unauthenticated.
+ */
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [status, setStatus] = useState<AuthStatus>('loading');
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async fbUser => {
+      if (!fbUser) {
+        setUser(null);
+        setStatus('unauthenticated');
+        return;
+      }
+      const appUser = await authService.resolveUser(fbUser);
+      if (!appUser) {
+        // Signed-in but not a valid admin — revoke the session.
+        await signOut(auth);
+        setUser(null);
+        setStatus('unauthenticated');
+        return;
+      }
+      setUser(appUser);
+      setStatus('authenticated');
+    });
+    return unsub;
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    // resolveUser + state updates are driven by onAuthStateChanged above; we
+    // return the resolved user here so the caller can react immediately.
+    return authService.login(email, password);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await authService.logout();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, status, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}

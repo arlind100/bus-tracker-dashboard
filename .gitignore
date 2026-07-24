@@ -12,6 +12,24 @@ dist
 dist-ssr
 *.local
 
+# Local environment (real Firebase config). Keep .env.example tracked.
+.env
+.env.*
+!.env.example
+
+# Credentials — never commit. A service-account key grants full backend access
+# and must never reach the browser or the repo.
+secrets/
+service-account*.json
+*-service-account.json
+serviceAccountKey*.json
+*.pem
+*.key
+*.p12
+*.jks
+google-services.json
+GoogleService-Info.plist
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
