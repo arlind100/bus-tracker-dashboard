@@ -81,35 +81,40 @@ should record an `adminUpdates` audit entry via `lib/firestore.logAdminUpdate`.
 
 ### Creating the first super admin
 
-Client writes to `admins` are denied until the [proposed rules](docs/PROPOSED_FIRESTORE_RULES.md)
-are deployed, and even then a super admin must exist to bootstrap. Create the
-first one out-of-band:
+Only a super admin can write the `admins` registry, so the first one must be
+created out-of-band. From the mobile repo (it holds the Admin-SDK scripts):
 
-1. **Firebase Console → Authentication** → add a user (email/password).
-2. **Firestore → `admins` collection** → add a document with **ID = that user's
-   uid** and fields:
-   ```json
-   { "email": "you@example.com", "active": true, "role": "admin", "superAdmin": true }
-   ```
-3. Sign in to the dashboard with those credentials.
+```bash
+cd ../bus-tracker
+npm run bootstrap:superadmin -- --email you@example.com
+```
+
+The account must already exist in Firebase Authentication. After that, every
+further administrator — including their Firebase Auth account — is created from
+the dashboard's **Admins** page.
 
 ## Firestore rules
 
-Two super-admin features (managing the `admins` registry, and `schedules`)
-required additive rule changes. **These are applied and deployed as of
-2026-07-24** — `isSuperAdmin()` was added, `schedules` got a public-read /
-admin-write block, and `admins` writes moved from `if false` to `if isSuperAdmin()`.
-Both features work against the live backend now.
+The rules are **deployed and verified**. They enforce five tiers (public,
+signed-in passenger, admin, agency-scoped admin, super admin), protect driver
+PII, prevent privilege escalation and self-lock-out, make the audit log
+append-only, and stop audit attribution (`createdBy` / `updatedBy`) from being
+spoofed.
 
-A third rule was added and deployed for the new `drivers` collection. Unlike the
-public transit collections, drivers hold **PII** (licence, phone), so the rule is
-`allow read, write: if isAdmin()` — deliberately **not** world-readable. The
-passenger app never reads it; it renders the denormalized `buses.driver` name.
+They live in the mobile repo (`bus-tracker/firestore.rules`) because they are
+shared project-wide. Deploy and re-verify any change from there:
 
-The rules live in the mobile repo (`bus-tracker/firestore.rules`) because they are
-shared project-wide; deploy any future change from there with
-`firebase deploy --only firestore:rules`. Design rationale and the safety notes
-are in [`docs/PROPOSED_FIRESTORE_RULES.md`](docs/PROPOSED_FIRESTORE_RULES.md).
+```bash
+cd ../bus-tracker
+firebase deploy --only firestore:rules
+npm run verify:rules    # 37 live allow/deny assertions
+```
+
+The full matrix and rationale are in [`docs/FIRESTORE_RULES.md`](docs/FIRESTORE_RULES.md).
+
+> **Client contract:** an agency-scoped admin must query `drivers` with an
+> `agencyId` filter — an unfiltered list could return another agency's PII and is
+> rejected wholesale. `driversService.list(scopeAgencyId)` handles this.
 
 ## Drivers ↔ buses
 

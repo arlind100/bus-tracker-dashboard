@@ -1,19 +1,22 @@
 // Admins registry data layer — manage the access-control gate (admins/{uid}).
 //
-// ⚠️ TWO external prerequisites for the WRITE paths here:
+// Writes here are gated on isSuperAdmin() in firestore.rules (deployed); reads
+// work for any signed-in user, because the gate check itself needs them.
 //
-//  1. Firestore rules currently deny ALL client writes to `admins`
-//     (`allow write: if false`). Super-admin management requires deploying the
-//     proposed rule change (see docs/PROPOSED_FIRESTORE_RULES.md) that allows
-//     writes when isSuperAdmin(). Reads already work for any signed-in user.
-//
-//  2. A Firebase AUTH account cannot be created from the browser without signing
-//     that user in. The doc id here is the Auth uid, so an admin's Auth user must
-//     be provisioned first (Firebase Console or a trusted Admin-SDK backend);
-//     this service then writes/updates their admins/{uid} record.
+// The doc id IS the Firebase Auth uid. Two ways to obtain one:
+//   - adminProvisioningService.createAuthAccount() creates the Auth account from
+//     the dashboard (on an isolated secondary app, so the super admin's own
+//     session is untouched), then this service writes the record; or
+//   - paste the uid of an account created in the Firebase Console.
 //
 // The `active` + `role` fields MUST stay `true` / `'admin'` for a working admin
 // (the mobile app + rules check them exactly). Super tier = additive superAdmin.
+//
+// DEACTIVATE vs DELETE: `setActive(false)` is the safe removal — it revokes
+// access in both apps and in the rules immediately. `remove()` deletes only the
+// Firestore record; the Firebase Auth account survives and must be deleted from
+// the Console (the Admin SDK required to do it from code must never be shipped
+// to a browser).
 
 import {
   collection,
@@ -59,21 +62,28 @@ export const adminsService = {
   },
 
   /**
-   * Creates or overwrites an admin record for an existing Auth uid. Always sets
+   * Creates or updates an admin record for an existing Auth uid. Always sets
    * role: 'admin' + active (default true) so the mobile gate keeps working.
+   * `createdAt`/`createdBy` are written only on first creation — editing an
+   * admin must not rewrite when they were onboarded.
    */
   async upsert(input: AdminInput): Promise<void> {
+    const ref = doc(db, COLLECTIONS.admins, input.uid);
+    const existing = await getDoc(ref);
     await setDoc(
-      doc(db, COLLECTIONS.admins, input.uid),
+      ref,
       {
         role: 'admin',
         active: input.active ?? true,
         ...(input.email ? { email: input.email.trim() } : {}),
         ...(input.displayName ? { displayName: input.displayName.trim() } : {}),
         ...(input.superAdmin !== undefined ? { superAdmin: input.superAdmin } : {}),
-        ...(input.agencyId ? { agencyId: input.agencyId } : {}),
-        ...(input.createdBy ? { createdBy: input.createdBy } : {}),
-        createdAt: Date.now(),
+        // '' clears the scope; undefined leaves it untouched.
+        ...(input.agencyId !== undefined ? { agencyId: input.agencyId } : {}),
+        ...(existing.exists()
+          ? {}
+          : { createdAt: Date.now(), ...(input.createdBy ? { createdBy: input.createdBy } : {}) }),
+        updatedAt: Date.now(),
       },
       { merge: true },
     );

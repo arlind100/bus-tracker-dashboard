@@ -52,10 +52,22 @@ function busLabel(data: { busNumber?: string; plate?: string }, id: string): str
 }
 
 export const driversService = {
-  /** All drivers (name-sorted) plus agency names and assigned-bus labels. */
-  async list(): Promise<DriversResult> {
+  /**
+   * All drivers (name-sorted) plus agency names and assigned-bus labels.
+   *
+   * `scopeAgencyId` MUST be passed for an agency-scoped admin: the rules only
+   * grant them read access to their own agency's driver documents, and a list
+   * query that could return another agency's document is rejected wholesale.
+   * A global/super admin passes nothing and reads the whole collection.
+   */
+  async list(scopeAgencyId?: string): Promise<DriversResult> {
+    const driversRef = collection(db, COLLECTIONS.drivers);
+    const driversQuery = scopeAgencyId
+      ? query(driversRef, where('agencyId', '==', scopeAgencyId))
+      : driversRef;
+
     const [driverSnap, agencyNames, busSnap] = await Promise.all([
-      getDocs(collection(db, COLLECTIONS.drivers)),
+      getDocs(driversQuery),
       fetchNameMap(COLLECTIONS.agencies),
       getDocs(collection(db, COLLECTIONS.buses)),
     ]);

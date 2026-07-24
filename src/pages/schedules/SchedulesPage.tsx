@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, CalendarClock, Info, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarClock, Clock } from 'lucide-react';
 import { schedulesService } from '@/services/schedules.service';
 import { routesService } from '@/services/routes.service';
 import { useAuditLog } from '@/hooks/useAuditLog';
@@ -98,15 +98,6 @@ export function SchedulesPage() {
           </Button>
         }
       />
-
-      <div className="mb-4 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 text-sm text-foreground">
-        <Info className="mt-0.5 size-4 shrink-0 text-warning" />
-        <p>
-          The <code className="text-xs">schedules</code> collection has no Firestore rule by default, so client
-          access is denied. Deploy the proposed rule (<code className="text-xs">docs/PROPOSED_FIRESTORE_RULES.md</code>)
-          to enable reading and writing timetables.
-        </p>
-      </div>
 
       {!permissionBlocked && (
         <div className="mb-4 flex items-center justify-between gap-3">

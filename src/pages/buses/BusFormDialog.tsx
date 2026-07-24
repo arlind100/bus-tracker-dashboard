@@ -66,7 +66,7 @@ export function BusFormDialog({
 
   const { data: agencies } = useQuery({ queryKey: ['agencies'], queryFn: () => agenciesService.list(), enabled: open });
   const { data: routes } = useQuery({ queryKey: ['routes'], queryFn: () => routesService.list(), enabled: open });
-  const { data: driversData } = useQuery({ queryKey: ['drivers'], queryFn: () => driversService.list(), enabled: open });
+  const { data: driversData } = useQuery({ queryKey: ['drivers', user?.agencyId ?? 'all'], queryFn: () => driversService.list(user?.agencyId), enabled: open });
   const drivers = driversData?.drivers ?? [];
 
   const {

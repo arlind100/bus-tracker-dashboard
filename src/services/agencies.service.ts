@@ -14,6 +14,8 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  query,
+  where,
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
@@ -39,6 +41,15 @@ export interface AgencyInput {
 export interface AgencyWithCounts extends Agency {
   routeCount: number;
   busCount: number;
+}
+
+/** Documents pointing at an agency — a delete is refused while any exist. */
+export interface AgencyReferences {
+  routes: number;
+  buses: number;
+  drivers: number;
+  admins: number;
+  total: number;
 }
 
 export interface AgencyDetail {
@@ -183,7 +194,43 @@ export const agenciesService = {
     await updateDoc(doc(db, COLLECTIONS.agencies, id), { active, updatedAt: Date.now() });
   },
 
+  /**
+   * Counts everything that references this agency. The UI calls this before
+   * offering to delete, so an agency is never removed out from under live
+   * routes, buses, drivers or admins.
+   */
+  async countReferences(id: string): Promise<AgencyReferences> {
+    const [routesSnap, busesSnap, driversSnap, adminsSnap] = await Promise.all([
+      getDocs(query(collection(db, COLLECTIONS.routes), where('agencyId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.buses), where('agencyId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.drivers), where('agencyId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.admins), where('agencyId', '==', id))),
+    ]);
+    const routes = routesSnap.size;
+    const buses = busesSnap.size;
+    const drivers = driversSnap.size;
+    const admins = adminsSnap.size;
+    return { routes, buses, drivers, admins, total: routes + buses + drivers + admins };
+  },
+
+  /**
+   * Deletes an agency ONLY when nothing references it. A referenced agency must
+   * be deactivated instead (setActive(false)) — deleting it would leave routes
+   * and buses pointing at an id that no longer resolves in either app.
+   */
   async remove(id: string): Promise<void> {
+    const refs = await this.countReferences(id);
+    if (refs.total > 0) {
+      const parts = [
+        refs.routes && `${refs.routes} route(s)`,
+        refs.buses && `${refs.buses} bus(es)`,
+        refs.drivers && `${refs.drivers} driver(s)`,
+        refs.admins && `${refs.admins} admin(s)`,
+      ].filter(Boolean);
+      throw new Error(
+        `This agency still owns ${parts.join(', ')}. Reassign or delete them first, or deactivate the agency instead.`,
+      );
+    }
     await deleteDoc(doc(db, COLLECTIONS.agencies, id));
   },
 };

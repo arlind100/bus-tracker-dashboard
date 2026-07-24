@@ -180,18 +180,45 @@ export const routesService = {
     });
   },
 
+  /** What a route delete would take with it — shown in the confirm dialog. */
+  async countDependents(id: string): Promise<{ stops: number; schedules: number; buses: number }> {
+    const [stopsSnap, schedulesSnap, busesSnap] = await Promise.all([
+      getDocs(query(collection(db, COLLECTIONS.stops), where('routeId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.schedules), where('routeId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.buses), where('routeId', '==', id))),
+    ]);
+    return { stops: stopsSnap.size, schedules: schedulesSnap.size, buses: busesSnap.size };
+  },
+
   /**
-   * Deletes a route AND its stop documents (matched by routeId) in one batch,
-   * so a delete can't orphan stops. Buses referencing the route are left intact
-   * (their routeId simply points at a removed route — reassign them separately).
+   * Deletes a route and everything that would be orphaned by it, in one atomic
+   * batch:
+   *   - its stop documents (stops.routeId)
+   *   - its timetable rows (schedules.routeId) — otherwise the mobile route
+   *     screen would query schedules for a route that no longer exists
+   *   - the route assignment on any bus (routeId + the mirrored `route` field),
+   *     so no bus is left pointing at a dead id. The buses themselves are kept:
+   *     a vehicle outlives a route and is simply unassigned.
    */
-  async remove(id: string): Promise<void> {
-    const stopsSnap = await getDocs(
-      query(collection(db, COLLECTIONS.stops), where('routeId', '==', id)),
-    );
+  async remove(id: string, actorUid?: string): Promise<void> {
+    const [stopsSnap, schedulesSnap, busesSnap] = await Promise.all([
+      getDocs(query(collection(db, COLLECTIONS.stops), where('routeId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.schedules), where('routeId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.buses), where('routeId', '==', id))),
+    ]);
+
     const batch = writeBatch(db);
     batch.delete(doc(db, COLLECTIONS.routes, id));
     stopsSnap.docs.forEach(d => batch.delete(d.ref));
+    schedulesSnap.docs.forEach(d => batch.delete(d.ref));
+    busesSnap.docs.forEach(d =>
+      batch.update(d.ref, {
+        routeId: '',
+        route: '',
+        updatedAt: Date.now(),
+        ...(actorUid ? { updatedBy: actorUid } : {}),
+      }),
+    );
     await batch.commit();
   },
 };

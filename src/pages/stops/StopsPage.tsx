@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, MapPin } from 'lucide-react';
+import { Plus, Pencil, Trash2, MapPin, ArrowUp, ArrowDown } from 'lucide-react';
 import { stopsService } from '@/services/stops.service';
 import { routesService } from '@/services/routes.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useDataTable } from '@/hooks/useDataTable';
 import { PageHeader } from '@/components/PageHeader';
@@ -40,6 +41,7 @@ const ALL = '__all__';
 export function StopsPage() {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['stops'],
@@ -73,7 +75,7 @@ export function StopsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (stop: Stop) => stopsService.remove(stop.id),
+    mutationFn: (stop: Stop) => stopsService.remove(stop.id, user?.uid),
     onSuccess: async (_r, stop) => {
       await audit('stop_delete', `Deleted stop "${stop.name}"`, stop.id);
       queryClient.invalidateQueries({ queryKey: ['stops'] });
@@ -83,6 +85,34 @@ export function StopsPage() {
     },
     onError: err => toast.error(err instanceof Error ? err.message : 'Delete failed'),
   });
+
+  // Reordering rewrites BOTH the stop documents' `order` and the route's
+  // ordered `stops[]` names, atomically — the passenger app reads the latter.
+  const reorder = useMutation({
+    mutationFn: ({ routeId, ids }: { routeId: string; ids: string[] }) =>
+      stopsService.reorderForRoute(routeId, ids, user?.uid),
+    onSuccess: async (_r, vars) => {
+      await audit('stop_reorder', `Reordered stops on route ${vars.routeId}`, vars.routeId);
+      queryClient.invalidateQueries({ queryKey: ['stops'] });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+      toast.success('Stop order updated');
+    },
+    onError: err => toast.error(err instanceof Error ? err.message : 'Reorder failed'),
+  });
+
+  /** Moves a stop one position earlier (-1) or later (+1) along its route. */
+  const move = (stop: Stop, delta: number) => {
+    if (!stop.routeId) return;
+    const siblings = (data ?? [])
+      .filter(s => s.routeId === stop.routeId)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const from = siblings.findIndex(s => s.id === stop.id);
+    const to = from + delta;
+    if (from === -1 || to < 0 || to >= siblings.length) return;
+    const ids = siblings.map(s => s.id);
+    [ids[from], ids[to]] = [ids[to], ids[from]];
+    reorder.mutate({ routeId: stop.routeId, ids });
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -188,6 +218,20 @@ export function StopsPage() {
                         <DropdownMenuItem onSelect={() => openEdit(stop)}>
                           <Pencil className="size-4" />
                           Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!stop.routeId || reorder.isPending}
+                          onSelect={() => move(stop, -1)}
+                        >
+                          <ArrowUp className="size-4" />
+                          Move earlier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!stop.routeId || reorder.isPending}
+                          onSelect={() => move(stop, 1)}
+                        >
+                          <ArrowDown className="size-4" />
+                          Move later
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem variant="destructive" onSelect={() => setDeleting(stop)}>

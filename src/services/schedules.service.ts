@@ -1,9 +1,7 @@
 // Schedules data layer — CRUD over `schedules` (timetable rows).
 //
-// ⚠️ `schedules` has NO Firestore rule today, which means the client SDK is
-// DENIED all access (read included). The dashboard's schedule features require
-// deploying the proposed `schedules` rule (see docs/PROPOSED_FIRESTORE_RULES.md).
-// Until then these calls will fail with a permission error — surface it clearly.
+// `schedules` is public-read / admin-write in the deployed rules, exactly like
+// the other transit collections, and the mobile route screen renders these rows.
 //
 // dayType ∈ {weekday, weekend}; times are "HH:MM" strings; schedules link to a
 // route by routeId. Doc stores both id + scheduleId.

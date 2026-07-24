@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Route as RouteIcon, Circle } from 'lucide-react';
 import { routesService } from '@/services/routes.service';
 import { agenciesService } from '@/services/agencies.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useDataTable } from '@/hooks/useDataTable';
 import { PageHeader } from '@/components/PageHeader';
@@ -37,6 +38,7 @@ import type { Route, RouteStatus } from '@/types';
 export function RoutesPage() {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['routes'],
@@ -64,11 +66,13 @@ export function RoutesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (route: Route) => routesService.remove(route.id),
+    mutationFn: (route: Route) => routesService.remove(route.id, user?.uid),
     onSuccess: async (_r, route) => {
-      await audit('route_delete', `Deleted route "${route.name}" and its stops`, route.id);
+      await audit('route_delete', `Deleted route "${route.name}" with its stops and schedules`, route.id);
       queryClient.invalidateQueries({ queryKey: ['routes'] });
       queryClient.invalidateQueries({ queryKey: ['stops'] });
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['buses'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Route deleted');
       setDeleting(null);
@@ -225,7 +229,7 @@ export function RoutesPage() {
         open={!!deleting}
         onOpenChange={o => !o && setDeleting(null)}
         title={`Delete ${deleting?.name}?`}
-        description="This permanently deletes the route and all of its stop records. This cannot be undone."
+        description="This permanently deletes the route, its stop records and its timetable rows. Buses assigned to it are kept but become unassigned. This cannot be undone."
         confirmLabel="Delete route"
         destructive
         loading={deleteMutation.isPending}

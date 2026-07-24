@@ -224,8 +224,9 @@ export function AgenciesPage() {
         title={`Delete ${deleting?.name}?`}
         description={
           <>
-            This permanently removes the agency. Its {deleting?.routeCount ?? 0} route(s) and{' '}
-            {deleting?.busCount ?? 0} bus(es) will remain but become unassigned. This cannot be undone.
+            An agency can only be deleted once nothing references it. This one currently owns{' '}
+            {deleting?.routeCount ?? 0} route(s) and {deleting?.busCount ?? 0} bus(es) — if either is
+            above zero the delete is refused; deactivate the agency instead. This cannot be undone.
           </>
         }
         confirmLabel="Delete agency"

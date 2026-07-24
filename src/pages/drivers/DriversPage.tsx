@@ -47,8 +47,9 @@ export function DriversPage() {
   const { user } = useAuth();
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => driversService.list(),
+    queryKey: ['drivers', user?.agencyId ?? 'all'],
+    // Scoped so an agency admin's list query stays within what the rules allow.
+    queryFn: () => driversService.list(user?.agencyId),
   });
 
   const drivers = useMemo(() => data?.drivers ?? [], [data]);
