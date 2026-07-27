@@ -59,6 +59,14 @@ export function RoutesPage() {
   const [editing, setEditing] = useState<Route | null>(null);
   const [deleting, setDeleting] = useState<Route | null>(null);
 
+  // What this delete would actually take with it, counted live so the operator
+  // confirms against real numbers rather than a generic warning.
+  const { data: dependents, isLoading: countingDependents } = useQuery({
+    queryKey: ['route-dependents', deleting?.id],
+    queryFn: () => routesService.countDependents(deleting!.id),
+    enabled: !!deleting,
+  });
+
   const table = useDataTable({
     items: data ?? [],
     searchText: r => `${r.routeNumber ?? ''} ${r.name} ${r.from ?? ''} ${r.to ?? ''} ${r.city ?? ''}`,
@@ -229,7 +237,34 @@ export function RoutesPage() {
         open={!!deleting}
         onOpenChange={o => !o && setDeleting(null)}
         title={`Delete ${deleting?.name}?`}
-        description="This permanently deletes the route, its stop records and its timetable rows. Buses assigned to it are kept but become unassigned. This cannot be undone."
+        description={
+          countingDependents ? (
+            'Checking what depends on this route…'
+          ) : (
+            <>
+              This permanently deletes the route
+              {dependents && (dependents.stops > 0 || dependents.schedules > 0) && (
+                <>
+                  {', '}
+                  <strong className="text-foreground">
+                    {[
+                      dependents.stops > 0 && `${dependents.stops} stop${dependents.stops === 1 ? '' : 's'}`,
+                      dependents.schedules > 0 &&
+                        `${dependents.schedules} timetable row${dependents.schedules === 1 ? '' : 's'}`,
+                    ]
+                      .filter(Boolean)
+                      .join(' and ')}
+                  </strong>
+                </>
+              )}
+              .{' '}
+              {dependents && dependents.buses > 0
+                ? `${dependents.buses} bus${dependents.buses === 1 ? '' : 'es'} assigned to it will be kept but become unassigned. `
+                : ''}
+              Passengers stop seeing it immediately. This cannot be undone.
+            </>
+          )
+        }
         confirmLabel="Delete route"
         destructive
         loading={deleteMutation.isPending}
