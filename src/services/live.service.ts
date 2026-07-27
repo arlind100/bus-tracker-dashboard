@@ -1,10 +1,15 @@
 // Live operations data layer — fleet ⨝ routes ⨝ busLocations, plus checkpoint
 // overrides and an optional realtime subscription for a live map.
 //
-// ⚠️ busLocations is a CHECKPOINT doc (one per bus, overwritten via setDoc merge
-// at meaningful moments). NEVER write it on a fast interval — the mobile app
-// animates locally between checkpoints and per-second writes would fight that
-// animation and blow up costs. updateBusLocation is a one-shot manual override.
+// ⚠️ busLocations is a CHECKPOINT doc (one per bus, id == busId, overwritten via
+// setDoc merge at meaningful moments). NEVER write it on a fast interval — it
+// would blow up read/write costs for every passenger subscribed to the fleet.
+// updateBusLocation is a one-shot manual override.
+//
+// The passenger app draws each bus at its checkpoint's exact coordinates and
+// snaps on update — it does NOT animate or interpolate between checkpoints, and
+// must not be changed to, because a smooth glide depicts travel no vehicle
+// reported. A checkpoint older than 15 minutes is shown as stale, not moved.
 
 import {
   collection,

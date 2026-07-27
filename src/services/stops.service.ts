@@ -83,8 +83,6 @@ export const stopsService = {
       city: input.city?.trim() ?? '',
       ...(input.lat !== undefined ? { lat: input.lat } : {}),
       ...(input.lng !== undefined ? { lng: input.lng } : {}),
-      base: 2,
-      per: 15,
       source: 'dashboard-created',
       createdAt: now,
       updatedAt: now,

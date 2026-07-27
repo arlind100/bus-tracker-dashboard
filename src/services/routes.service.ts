@@ -80,8 +80,6 @@ export const routesService = {
       st: ST_BY_STATUS[status],
       freq: input.freq?.trim() ?? '',
       duration: input.duration?.trim() ?? '',
-      base: 2,
-      per: 15,
       description: input.description?.trim() ?? '',
       stops: input.stops ?? [],
       ...(input.routePath ? { routePath: input.routePath } : {}),
@@ -123,8 +121,6 @@ export const routesService = {
       st: ST_BY_STATUS[status],
       freq: input.freq?.trim() ?? '',
       duration: input.duration?.trim() ?? '',
-      base: 2,
-      per: 15,
       description: input.description?.trim() ?? '',
       stops: stopNames,
       ...(input.routePath ? { routePath: input.routePath } : {}),
@@ -147,8 +143,6 @@ export const routesService = {
         city: input.from?.trim() ?? '',
         lat: stop.lat,
         lng: stop.lng,
-        base: 2,
-        per: 15,
         source: 'dashboard-created',
         createdAt: now,
         updatedAt: now,
@@ -199,12 +193,15 @@ export const routesService = {
    *   - the route assignment on any bus (routeId + the mirrored `route` field),
    *     so no bus is left pointing at a dead id. The buses themselves are kept:
    *     a vehicle outlives a route and is simply unassigned.
+   *   - the same reference on those buses' checkpoints, which otherwise keep
+   *     reporting a route id that no longer resolves in either app.
    */
   async remove(id: string, actorUid?: string): Promise<void> {
-    const [stopsSnap, schedulesSnap, busesSnap] = await Promise.all([
+    const [stopsSnap, schedulesSnap, busesSnap, locationsSnap] = await Promise.all([
       getDocs(query(collection(db, COLLECTIONS.stops), where('routeId', '==', id))),
       getDocs(query(collection(db, COLLECTIONS.schedules), where('routeId', '==', id))),
       getDocs(query(collection(db, COLLECTIONS.buses), where('routeId', '==', id))),
+      getDocs(query(collection(db, COLLECTIONS.busLocations), where('routeId', '==', id))),
     ]);
 
     const batch = writeBatch(db);
@@ -219,6 +216,7 @@ export const routesService = {
         ...(actorUid ? { updatedBy: actorUid } : {}),
       }),
     );
+    locationsSnap.docs.forEach(d => batch.update(d.ref, { routeId: '' }));
     await batch.commit();
   },
 };

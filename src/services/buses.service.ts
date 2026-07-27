@@ -12,7 +12,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  deleteDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
@@ -98,11 +98,20 @@ export const busesService = {
   },
 
   /**
-   * Deletes the bus and frees any driver assigned to it, so no driver is left
-   * pointing at a bus that no longer exists.
+   * Deletes the bus together with its last-known checkpoint, then frees any
+   * driver assigned to it.
+   *
+   * The checkpoint MUST go with the bus. The passenger map builds its markers
+   * from `busLocations`, so an orphaned checkpoint keeps drawing a live vehicle
+   * that no longer exists in the fleet — labelled with a raw document id,
+   * because there is no bus left to name it. Both deletes go in one batch so a
+   * failure can never leave exactly that state behind.
    */
   async remove(id: string): Promise<void> {
-    await deleteDoc(doc(db, COLLECTIONS.buses, id));
+    const batch = writeBatch(db);
+    batch.delete(doc(db, COLLECTIONS.buses, id));
+    batch.delete(doc(db, COLLECTIONS.busLocations, id));
+    await batch.commit();
     await driversService.releaseBus(id);
   },
 };

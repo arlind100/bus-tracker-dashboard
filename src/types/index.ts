@@ -90,10 +90,9 @@ export interface Route {
   isActive?: boolean;
   status?: RouteStatus;
   st?: RouteSt;
+  /** Human-readable service frequency ("Every 15 min") — display only. */
   freq?: string;
   duration?: string;
-  base?: number;
-  per?: number;
   description?: string;
   /** Ordered stop NAMES (not ids). */
   stops?: string[];
@@ -122,8 +121,6 @@ export interface Stop {
   /** Normalized 0–100 position for the in-app schematic map. */
   x?: number;
   y?: number;
-  base?: number;
-  per?: number;
   source?: string;
   createdAt?: number;
   updatedAt?: number;
