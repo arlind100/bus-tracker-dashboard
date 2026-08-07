@@ -2,12 +2,12 @@
 //
 // Mirrors the mobile admin.service.getDashboardStats: fetches whole collections
 // and computes counts client-side (the client SDK has no server aggregation).
-// Races an 8s timeout and degrades to a `source: 'demo'` empty result instead of
-// throwing, so the Overview never hard-crashes on a slow/failed network.
 //
-// This aggregation also serves as the Firestore CONNECTION VERIFICATION: a
-// `source: 'firebase'` result with real counts proves the dashboard is wired to
-// the same backend as the mobile app.
+// A read that fails or times out THROWS. It must not resolve to an empty result:
+// "0 agencies, 0 routes, 0 buses" is exactly what a brand-new backend looks like,
+// so returning zeros on failure tells an operator their platform is empty when
+// the truth is that we could not read it. The Overview catches the throw and
+// renders a retryable error instead.
 
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -28,31 +28,6 @@ function zeroIssuesByCategory(): Record<IssueKind, number> {
     (acc, k) => ({ ...acc, [k]: 0 }),
     {} as Record<IssueKind, number>,
   );
-}
-
-function emptyStats(): DashboardStats {
-  return {
-    totalAgencies: 0,
-    totalRoutes: 0,
-    activeRoutes: 0,
-    totalBuses: 0,
-    activeBuses: 0,
-    offlineBuses: 0,
-    maintenanceBuses: 0,
-    totalStops: 0,
-    totalNotifications: 0,
-    openIssueReports: 0,
-    totalIssueReports: 0,
-    resolvedIssueReports: 0,
-    issuesByCategory: zeroIssuesByCategory(),
-    routesByAgency: {},
-    busesByAgency: {},
-    agencyNames: {},
-    recentIssueReports: [],
-    recentAdminUpdates: [],
-    recentNotifications: [],
-    source: 'demo',
-  };
 }
 
 async function fetchStats(): Promise<DashboardStats> {
@@ -122,23 +97,20 @@ async function fetchStats(): Promise<DashboardStats> {
     recentIssueReports: issueReports.slice(0, 5),
     recentAdminUpdates: updatesSnap.docs.map(d => toDoc<AdminUpdate>(d)),
     recentNotifications: notifications.slice(0, 5),
-    source: 'firebase',
   };
 }
 
 export const dashboardService = {
-  /** Fetches KPI stats, degrading to an empty `demo` result on error/timeout. */
+  /**
+   * Fetches KPI stats. Throws on failure or after FETCH_TIMEOUT_MS so the caller
+   * can show a retryable error — never resolves to zeros, which would be
+   * indistinguishable from an empty backend.
+   */
   async getStats(): Promise<DashboardStats> {
-    try {
-      const result = await withTimeout(fetchStats());
-      if (result === TIMEOUT) {
-        console.warn('[dashboardService] getStats timed out — using fallback');
-        return emptyStats();
-      }
-      return result;
-    } catch (err) {
-      console.error('[dashboardService] getStats:', err);
-      return emptyStats();
+    const result = await withTimeout(fetchStats());
+    if (result === TIMEOUT) {
+      throw new Error('Timed out reading the dashboard data. Check your connection and retry.');
     }
+    return result;
   },
 };

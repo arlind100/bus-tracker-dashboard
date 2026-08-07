@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Eye, Building2, Power, PowerOff } from 'lucide-react';
 import { agenciesService, type AgencyWithCounts } from '@/services/agencies.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useDataTable } from '@/hooks/useDataTable';
 import { PageHeader } from '@/components/PageHeader';
@@ -31,6 +32,7 @@ import { AgencyFormDialog } from '@/pages/agencies/AgencyFormDialog';
 export function AgenciesPage() {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['agencies', 'with-counts'],
     queryFn: () => agenciesService.listWithCounts(),
@@ -60,7 +62,7 @@ export function AgenciesPage() {
 
   const toggleActive = useMutation({
     mutationFn: (agency: AgencyWithCounts) =>
-      agenciesService.setActive(agency.id, !(agency.active ?? true)),
+      agenciesService.setActive(agency.id, !(agency.active ?? true), user?.uid),
     onSuccess: (_r, agency) => {
       queryClient.invalidateQueries({ queryKey: ['agencies'] });
       toast.success((agency.active ?? true) ? 'Agency deactivated' : 'Agency activated');

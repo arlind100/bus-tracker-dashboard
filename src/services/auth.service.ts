@@ -19,16 +19,19 @@ import { auth, db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
 import type { AdminRecord, AppUser, UserRole } from '@/types';
 
-/** Reads admins/{uid} and returns the typed record, or null if absent. */
+/**
+ * Reads admins/{uid}. Returns null when the document genuinely does not exist,
+ * and THROWS when the read itself failed.
+ *
+ * The distinction matters: "there is no admin record for you" and "we could not
+ * check" are different answers, and collapsing them told a real admin their
+ * account lacked access whenever the network hiccuped. Callers still deny access
+ * in both cases — this only lets them say which one happened.
+ */
 async function getAdminRecord(uid: string): Promise<AdminRecord | null> {
-  try {
-    const snap = await getDoc(doc(db, COLLECTIONS.admins, uid));
-    if (!snap.exists()) return null;
-    return { uid: snap.id, ...snap.data() } as AdminRecord;
-  } catch (err) {
-    console.error('[authService] getAdminRecord:', err);
-    return null;
-  }
+  const snap = await getDoc(doc(db, COLLECTIONS.admins, uid));
+  if (!snap.exists()) return null;
+  return { uid: snap.id, ...snap.data() } as AdminRecord;
 }
 
 /**
@@ -57,15 +60,24 @@ function toAppUser(fbUser: FirebaseUser, record: AdminRecord | null): AppUser {
 export const authService = {
   getAdminRecord,
 
-  /** True only if admins/{uid} exists, is active, and has role 'admin'. */
+  /**
+   * True only if admins/{uid} exists, is active, and has role 'admin'.
+   * Denies access if the record cannot be read — this fails closed on purpose.
+   */
   async checkIsAdmin(uid: string): Promise<boolean> {
-    return recordGrantsAdmin(await getAdminRecord(uid));
+    try {
+      return recordGrantsAdmin(await getAdminRecord(uid));
+    } catch (err) {
+      console.error('[authService] checkIsAdmin:', err);
+      return false;
+    }
   },
 
   /**
    * Resolves a signed-in Firebase user into a fully-formed AppUser by reading
    * their admin record. Returns null if the user is NOT a valid admin — the
-   * caller should then sign them out and reject access.
+   * caller should then sign them out and reject access. Propagates a read
+   * failure so the caller can tell "not an admin" from "could not check".
    */
   async resolveUser(fbUser: FirebaseUser): Promise<AppUser | null> {
     const record = await getAdminRecord(fbUser.uid);
@@ -74,13 +86,27 @@ export const authService = {
   },
 
   /**
-   * Signs in with email/password, then verifies admin status. If the credentials
-   * are valid but the account is not an admin, the user is signed back out and
-   * an error is thrown — matching the mobile admin-login flow.
+   * Signs in with email/password, then verifies admin status. The user is signed
+   * back out unless the verification positively grants admin access, so a failed
+   * check never leaves a half-authenticated session behind.
    */
   async login(email: string, password: string): Promise<AppUser> {
     const { user: fbUser } = await signInWithEmailAndPassword(auth, email.trim(), password);
-    const appUser = await this.resolveUser(fbUser);
+
+    let appUser: AppUser | null;
+    try {
+      appUser = await this.resolveUser(fbUser);
+    } catch (err) {
+      // The credentials were fine; we simply could not read admins/{uid}.
+      // Saying "no admin access" here would send a real admin chasing a
+      // permissions problem that does not exist.
+      console.error('[authService] login verification failed:', err);
+      await firebaseSignOut(auth);
+      throw new Error('Could not verify your access. Check your connection and try again.', {
+        cause: err,
+      });
+    }
+
     if (!appUser) {
       await firebaseSignOut(auth);
       throw new Error('This account does not have admin access.');

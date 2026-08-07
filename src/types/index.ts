@@ -295,9 +295,6 @@ export interface AdminUpdate {
 
 // ─── Dashboard aggregate shapes ──────────────────────────────────────────────
 
-/** Provenance flag mirroring the mobile admin.service ('firebase' | 'demo'). */
-export type DataSource = 'firebase' | 'demo';
-
 export interface DashboardStats {
   totalAgencies: number;
   totalRoutes: number;
@@ -322,5 +319,4 @@ export interface DashboardStats {
   recentIssueReports: IssueReport[];
   recentAdminUpdates: AdminUpdate[];
   recentNotifications: Notification[];
-  source: DataSource;
 }

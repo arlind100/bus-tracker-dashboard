@@ -8,7 +8,6 @@ import {
   Bell,
   TriangleAlert,
   CircleCheck,
-  CircleAlert,
   Activity,
   Wrench,
   Power,
@@ -49,8 +48,6 @@ export function OverviewPage() {
     );
   }
 
-  const live = data.source === 'firebase';
-
   const fleetData = [
     { name: 'Active', value: data.activeBuses, color: STATUS_CHART_COLOR.active },
     { name: 'Offline', value: data.offlineBuses, color: STATUS_CHART_COLOR.offline },
@@ -78,17 +75,12 @@ export function OverviewPage() {
         title={`Welcome back, ${firstName}`}
         description="A live overview of your transit platform."
         actions={
-          live ? (
-            <Badge variant="success">
-              <CircleCheck className="size-3.5" />
-              Connected to Firestore
-            </Badge>
-          ) : (
-            <Badge variant="warning">
-              <CircleAlert className="size-3.5" />
-              Offline · showing fallback
-            </Badge>
-          )
+          // Reaching this render means the aggregate read succeeded — a failed
+          // or timed-out read throws and is handled by the isError branch above.
+          <Badge variant="success">
+            <CircleCheck className="size-3.5" />
+            Connected to Firestore
+          </Badge>
         }
       />
 

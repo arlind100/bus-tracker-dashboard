@@ -139,3 +139,45 @@ Anything shared with the mobile app: collection names, document-ID schemes, fiel
 names/types/enums, the `admins` gate semantics (`active` + `role`), and the
 epoch-ms timestamp convention. Never ship a service-account key to the browser.
 Full list in the handoff doc, §10.
+
+## Running both apps together
+
+The dashboard writes and the passenger app reads the same Firestore project, so
+run them side by side to see the whole chain:
+
+```bash
+# terminal 1 — dashboard        → http://localhost:5173
+cd bus-tracker-dashboard && npm install && npm run dev
+
+# terminal 2 — passenger app    → http://localhost:8081
+cd bus-tracker && npm install && npm run web
+```
+
+`npm run web` pins port 8081 on purpose: that exact origin is what the Google
+OAuth web client must authorize, and Expo would otherwise drift to the next free
+port. The only scripts this project defines are `dev`, `build`, `lint` and
+`preview`.
+
+Quality gates:
+
+```bash
+npm run lint      # ESLint
+npx tsc -b        # TypeScript
+npm run build     # production build
+```
+
+The Firestore rules and the two verification scripts live in the mobile repo
+(they are shared project-wide) — see `../bus-tracker/README.md`.
+
+## Deployment status
+
+**Complete, no console work needed:** email/password login, the `admins/{uid}`
+gate, super-admin and agency-scoped tiers, the route guard, session persistence,
+full CRUD for agencies/routes/stops/buses/drivers/schedules/notifications,
+issue triage, live checkpoints, the audit log, empty states on every page, and
+the production build.
+
+**Requires you:** nothing for the dashboard itself. Deploying it to a real domain
+needs that domain added under Firebase Console → Authentication → Settings →
+**Authorized domains** (localhost already works). Google sign-in items are
+mobile-only — see `../bus-tracker/README.md` → *Deployment status*.

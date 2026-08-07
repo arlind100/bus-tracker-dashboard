@@ -35,18 +35,27 @@ import type { Bus, BusStatus } from '@/types';
 
 const NONE = '__none__';
 
-const schema = z.object({
-  agencyId: z.string(),
-  routeId: z.string(),
-  plate: z.string().optional(),
-  busNumber: z.string().optional(),
-  driverId: z.string(),
-  status: z.enum(['Active', 'Offline', 'Maintenance']),
-  capacity: z
-    .string()
-    .optional()
-    .refine(v => v == null || v.trim() === '' || Number.isFinite(Number(v)), 'Must be a number'),
-});
+const schema = z
+  .object({
+    agencyId: z.string(),
+    routeId: z.string(),
+    plate: z.string().optional(),
+    busNumber: z.string().optional(),
+    driverId: z.string(),
+    status: z.enum(['Active', 'Offline', 'Maintenance']),
+    capacity: z
+      .string()
+      .optional()
+      .refine(v => v == null || v.trim() === '' || Number.isFinite(Number(v)), 'Must be a number'),
+  })
+  // A vehicle needs at least one human-readable identifier. With both blank the
+  // fleet table shows "—" in every column and the passenger app falls back to
+  // labelling the bus with its raw document id — an unusable record that the
+  // form would otherwise create from a completely empty dialog.
+  .refine(v => !!v.busNumber?.trim() || !!v.plate?.trim(), {
+    message: 'Enter a bus number or a plate.',
+    path: ['busNumber'],
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -150,10 +159,10 @@ export function BusFormDialog({
 
         <form onSubmit={handleSubmit(v => mutation.mutate(v))} className="flex flex-col gap-4" noValidate>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Bus number" htmlFor="busNumber">
+            <FormField label="Bus number" htmlFor="busNumber" error={errors.busNumber?.message}>
               <Input id="busNumber" placeholder="Bus 01" {...register('busNumber')} />
             </FormField>
-            <FormField label="Plate" htmlFor="plate">
+            <FormField label="Plate" htmlFor="plate" error={errors.plate?.message}>
               <Input id="plate" placeholder="SK-1234-AB" {...register('plate')} />
             </FormField>
           </div>

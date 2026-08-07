@@ -22,9 +22,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus('unauthenticated');
         return;
       }
-      const appUser = await authService.resolveUser(fbUser);
+      // resolveUser throws if admins/{uid} could not be READ (as opposed to
+      // answering "not an admin"). Both outcomes revoke the session — the guard
+      // fails closed — but only the first is an error worth logging.
+      let appUser: AppUser | null = null;
+      try {
+        appUser = await authService.resolveUser(fbUser);
+      } catch (err) {
+        console.error('[AuthProvider] could not verify admin access:', err);
+      }
+
       if (!appUser) {
-        // Signed-in but not a valid admin — revoke the session.
+        // Signed-in but not a verified admin — revoke the session.
         await signOut(auth);
         setUser(null);
         setStatus('unauthenticated');

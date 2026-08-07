@@ -192,8 +192,12 @@ export const agenciesService = {
   },
 
   /** Soft-disable / enable an agency (additive `active` flag). */
-  async setActive(id: string, active: boolean): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.agencies, id), { active, updatedAt: Date.now() });
+  async setActive(id: string, active: boolean, actorUid?: string): Promise<void> {
+    await updateDoc(doc(db, COLLECTIONS.agencies, id), {
+      active,
+      updatedAt: Date.now(),
+      ...(actorUid ? { updatedBy: actorUid } : {}),
+    });
   },
 
   /**
