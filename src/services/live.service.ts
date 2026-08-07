@@ -68,7 +68,11 @@ export const liveService = {
    * with no existing busLocations doc is created rather than throwing. Requires
    * admin auth. Do NOT call on an interval.
    */
-  async updateBusLocation(busId: string, update: BusLocationUpdate): Promise<void> {
+  async updateBusLocation(
+    busId: string,
+    update: BusLocationUpdate,
+    actorUid?: string,
+  ): Promise<void> {
     const payload: Record<string, unknown> = { busId, id: busId, updatedAt: Date.now() };
     if (update.status !== undefined) payload.status = update.status;
     if (update.currentStop !== undefined) payload.currentStop = update.currentStop;
@@ -76,6 +80,7 @@ export const liveService = {
     if (update.progress !== undefined) payload.progress = update.progress;
     if (update.lat !== undefined) payload.lat = update.lat;
     if (update.lng !== undefined) payload.lng = update.lng;
+    if (actorUid) payload.updatedBy = actorUid;
     await setDoc(doc(db, COLLECTIONS.busLocations, busId), payload, { merge: true });
   },
 

@@ -140,7 +140,9 @@ export const routesService = {
         routes: [routeId],
         name: stop.name.trim(),
         order,
-        city: input.from?.trim() ?? '',
+        // The stop's city, not the route's origin STOP name — `from` holds a
+        // stop name ("Centar"), so using it here mislabels every stop's city.
+        city: input.city?.trim() ?? '',
         lat: stop.lat,
         lng: stop.lng,
         source: 'dashboard-created',

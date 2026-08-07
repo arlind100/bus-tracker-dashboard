@@ -57,7 +57,7 @@ export const schedulesService = {
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as Schedule) : null;
   },
 
-  async create(input: ScheduleInput): Promise<string> {
+  async create(input: ScheduleInput, actorUid?: string): Promise<string> {
     const now = Date.now();
     const id = `sch_${now}`;
     await setDoc(doc(db, COLLECTIONS.schedules, id), {
@@ -70,12 +70,17 @@ export const schedulesService = {
       isActive: input.isActive ?? true,
       createdAt: now,
       updatedAt: now,
+      ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
     });
     return id;
   },
 
-  async update(id: string, patch: Partial<ScheduleInput>): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.schedules, id), { ...patch, updatedAt: Date.now() });
+  async update(id: string, patch: Partial<ScheduleInput>, actorUid?: string): Promise<void> {
+    await updateDoc(doc(db, COLLECTIONS.schedules, id), {
+      ...patch,
+      updatedAt: Date.now(),
+      ...(actorUid ? { updatedBy: actorUid } : {}),
+    });
   },
 
   async remove(id: string): Promise<void> {

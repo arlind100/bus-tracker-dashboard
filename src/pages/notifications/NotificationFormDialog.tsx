@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { notificationsService, type NotificationInput } from '@/services/notifications.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Dialog,
@@ -49,6 +50,7 @@ export function NotificationFormDialog({
 }) {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
   const isEdit = !!notification;
 
   const {
@@ -76,11 +78,11 @@ export function NotificationFormDialog({
     mutationFn: async (values: FormValues) => {
       const payload: NotificationInput = values;
       if (isEdit && notification) {
-        await notificationsService.update(notification.id, payload);
+        await notificationsService.update(notification.id, payload, user?.uid);
         await audit('notification_update', `Edited alert "${values.title}"`, notification.id);
         return;
       }
-      const id = await notificationsService.create(payload);
+      const id = await notificationsService.create(payload, user?.uid);
       await audit('notification_create', `Broadcast alert "${values.title}"`, id);
     },
     onSuccess: () => {

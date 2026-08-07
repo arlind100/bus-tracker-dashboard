@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { routesService, type RouteInput, type StopSeed } from '@/services/routes.service';
 import { agenciesService } from '@/services/agencies.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Dialog,
@@ -72,6 +73,7 @@ export function RouteFormDialog({
 }) {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
   const isEdit = !!route;
 
   const { data: agencies } = useQuery({
@@ -140,7 +142,7 @@ export function RouteFormDialog({
       };
 
       if (isEdit && route) {
-        await routesService.update(route.id, base);
+        await routesService.update(route.id, base, user?.uid);
         await audit('route_update', `Updated route "${values.name}"`, route.id);
         return route.id;
       }
@@ -158,11 +160,14 @@ export function RouteFormDialog({
       }
 
       if (allHaveCoords && seeds.length > 0) {
-        const { routeId } = await routesService.createWithStops({ ...base, stopSeeds: seeds });
+        const { routeId } = await routesService.createWithStops(
+          { ...base, stopSeeds: seeds },
+          user?.uid,
+        );
         await audit('route_create', `Created route "${values.name}" with ${seeds.length} stops`, routeId);
         return routeId;
       }
-      const id = await routesService.create(base);
+      const id = await routesService.create(base, user?.uid);
       await audit('route_create', `Created route "${values.name}"`, id);
       return id;
     },

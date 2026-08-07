@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { stopsService, type StopInput } from '@/services/stops.service';
 import { routesService } from '@/services/routes.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Dialog,
@@ -58,6 +59,7 @@ export function StopFormDialog({
 }) {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
   const isEdit = !!stop;
 
   const { data: routes } = useQuery({
@@ -101,11 +103,11 @@ export function StopFormDialog({
         lng: values.lng?.trim() ? Number(values.lng) : undefined,
       };
       if (isEdit && stop) {
-        await stopsService.update(stop.id, payload);
+        await stopsService.update(stop.id, payload, user?.uid);
         await audit('stop_update', `Updated stop "${values.name}"`, stop.id);
         return;
       }
-      const id = await stopsService.create(payload);
+      const id = await stopsService.create(payload, user?.uid);
       await audit('stop_create', `Created stop "${values.name}"`, id);
     },
     onSuccess: () => {

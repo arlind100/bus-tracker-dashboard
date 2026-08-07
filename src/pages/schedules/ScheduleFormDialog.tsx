@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { schedulesService, type ScheduleInput } from '@/services/schedules.service';
 import { routesService } from '@/services/routes.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { describeFirebaseError } from '@/lib/errors';
 import {
@@ -54,6 +55,7 @@ export function ScheduleFormDialog({
 }) {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
   const isEdit = !!schedule;
 
   const { data: routes } = useQuery({ queryKey: ['routes'], queryFn: () => routesService.list(), enabled: open });
@@ -87,11 +89,11 @@ export function ScheduleFormDialog({
     mutationFn: async (values: FormValues) => {
       const payload: ScheduleInput = values;
       if (isEdit && schedule) {
-        await schedulesService.update(schedule.id, payload);
+        await schedulesService.update(schedule.id, payload, user?.uid);
         await audit('schedule_update', `Updated schedule for route ${values.routeId}`, schedule.id);
         return;
       }
-      const id = await schedulesService.create(payload);
+      const id = await schedulesService.create(payload, user?.uid);
       await audit('schedule_create', `Created schedule for route ${values.routeId}`, id);
     },
     onSuccess: () => {

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { agenciesService, type AgencyInput } from '@/services/agencies.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   Dialog,
@@ -43,6 +44,7 @@ export function AgencyFormDialog({
 }) {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
   const isEdit = !!agency;
 
   const {
@@ -73,11 +75,11 @@ export function AgencyFormDialog({
     mutationFn: async (values: FormValues) => {
       const payload: AgencyInput = values;
       if (isEdit && agency) {
-        await agenciesService.update(agency.id, payload);
+        await agenciesService.update(agency.id, payload, user?.uid);
         await audit('agency_update', `Updated agency "${values.name}"`, agency.id);
         return agency.id;
       }
-      const id = await agenciesService.create(payload);
+      const id = await agenciesService.create(payload, user?.uid);
       await audit('agency_create', `Created agency "${values.name}"`, id);
       return id;
     },

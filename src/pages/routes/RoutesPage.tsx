@@ -90,7 +90,7 @@ export function RoutesPage() {
 
   const statusMutation = useMutation({
     mutationFn: ({ route, status }: { route: Route; status: RouteStatus }) =>
-      routesService.setStatus(route.id, status),
+      routesService.setStatus(route.id, status, user?.uid),
     onSuccess: async (_r, { route, status }) => {
       await audit('route_status', `Set route "${route.name}" to ${status}`, route.id);
       queryClient.invalidateQueries({ queryKey: ['routes'] });

@@ -165,7 +165,7 @@ export const agenciesService = {
    * Creates an agency. Uses a deterministic `agency_<epoch>` id and stores both
    * `id` and `agencyId` = that id, matching the seeded shape.
    */
-  async create(input: AgencyInput): Promise<string> {
+  async create(input: AgencyInput, actorUid?: string): Promise<string> {
     const now = Date.now();
     const id = `agency_${now}`;
     await setDoc(doc(db, COLLECTIONS.agencies, id), {
@@ -178,14 +178,16 @@ export const agenciesService = {
       active: input.active ?? true,
       createdAt: now,
       updatedAt: now,
+      ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
     });
     return id;
   },
 
-  async update(id: string, patch: Partial<AgencyInput>): Promise<void> {
+  async update(id: string, patch: Partial<AgencyInput>, actorUid?: string): Promise<void> {
     await updateDoc(doc(db, COLLECTIONS.agencies, id), {
       ...patch,
       updatedAt: Date.now(),
+      ...(actorUid ? { updatedBy: actorUid } : {}),
     });
   },
 

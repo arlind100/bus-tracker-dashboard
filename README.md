@@ -25,7 +25,9 @@ epoch-ms timestamp convention all mirror the mobile app exactly.
 npm install
 
 # 2. Configure Firebase (public client identifiers — not secrets)
-cp .env.example .env      # values are prefilled for bus-tracker-capstone
+cp .env.example .env      # project/auth/bucket/sender are prefilled for
+                          # bus-tracker-capstone; fill in API key + app id from
+                          # Firebase Console -> Project settings -> Your apps
 
 # 3. Run
 npm run dev               # http://localhost:5173

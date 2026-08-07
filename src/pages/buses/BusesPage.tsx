@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Bus as BusIcon, Circle } from 'lucide-react';
 import { busesService } from '@/services/buses.service';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useDataTable } from '@/hooks/useDataTable';
 import { PageHeader } from '@/components/PageHeader';
@@ -42,6 +43,7 @@ const STATUS_COLOR: Record<BusStatus, string> = {
 export function BusesPage() {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
+  const { user } = useAuth();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['buses'],
@@ -77,7 +79,8 @@ export function BusesPage() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ bus, status }: { bus: Bus; status: BusStatus }) => busesService.setStatus(bus.id, status),
+    mutationFn: ({ bus, status }: { bus: Bus; status: BusStatus }) =>
+      busesService.setStatus(bus.id, status, user?.uid),
     onSuccess: async (_r, { bus, status }) => {
       await audit('bus_status', `Set bus ${bus.busNumber || bus.id} to ${status}`, bus.id);
       queryClient.invalidateQueries({ queryKey: ['buses'] });

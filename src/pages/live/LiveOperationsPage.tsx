@@ -50,11 +50,14 @@ export function LiveOperationsPage() {
 
   const effectiveStatus = (bus: Bus): string => locations[bus.id]?.status || bus.status || 'Offline';
 
+  // A bus is drawn ONLY where its checkpoint says it is. There is deliberately
+  // no fallback to the route's first path point: that would put a marker on the
+  // map for a vehicle nobody reported, which is indistinguishable from a real
+  // position once drawn. This matches the passenger app, which omits a bus with
+  // no reported coordinates rather than guessing one.
   const positionFor = (bus: Bus): [number, number] | null => {
     const loc = locations[bus.id];
     if (loc?.lat != null && loc?.lng != null) return [loc.lat, loc.lng];
-    const path = bus.routeId ? routesById[bus.routeId]?.routePath : undefined;
-    if (path && path.length > 0) return [path[0].lat, path[0].lng];
     return null;
   };
 

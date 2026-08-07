@@ -42,7 +42,7 @@ export const notificationsService = {
   },
 
   /** Broadcasts a new alert with auto color/time/createdAt. */
-  async create(input: NotificationInput): Promise<string> {
+  async create(input: NotificationInput, actorUid?: string): Promise<string> {
     const ref = await addDoc(collection(db, COLLECTIONS.notifications), {
       kind: input.kind,
       title: input.title.trim(),
@@ -51,11 +51,12 @@ export const notificationsService = {
       color: NOTIFICATION_COLORS[input.kind],
       source: 'dashboard-console',
       createdAt: Date.now(),
+      ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
     });
     return ref.id;
   },
 
-  async update(id: string, patch: Partial<NotificationInput>): Promise<void> {
+  async update(id: string, patch: Partial<NotificationInput>, actorUid?: string): Promise<void> {
     const data: Record<string, unknown> = {};
     if (patch.kind) {
       data.kind = patch.kind;
@@ -63,6 +64,7 @@ export const notificationsService = {
     }
     if (patch.title !== undefined) data.title = patch.title.trim();
     if (patch.body !== undefined) data.body = patch.body.trim();
+    if (actorUid) data.updatedBy = actorUid;
     await updateDoc(doc(db, COLLECTIONS.notifications, id), data);
   },
 
