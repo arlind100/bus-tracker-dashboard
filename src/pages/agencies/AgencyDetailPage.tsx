@@ -224,7 +224,9 @@ export function AgencyDetailPage() {
                     <TableRow key={a.uid}>
                       <TableCell className="font-medium">{a.email || a.uid}</TableCell>
                       <TableCell>
-                        {a.superAdmin ? <Badge>Super Admin</Badge> : <Badge variant="neutral">Admin</Badge>}
+                        {a.role === 'super_admin'
+                          ? <Badge>Super Admin</Badge>
+                          : <Badge variant="neutral">Agency Admin</Badge>}
                       </TableCell>
                       <TableCell><ActiveBadge active={a.active} /></TableCell>
                     </TableRow>

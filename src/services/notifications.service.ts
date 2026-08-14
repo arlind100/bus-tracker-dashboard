@@ -30,6 +30,12 @@ export interface NotificationInput {
   kind: NotificationKind;
   title: string;
   body: string;
+  /**
+   * Agency that owns this alert. A super admin may broadcast platform-wide by
+   * leaving it empty; an agency admin must supply their own agency, because the
+   * rules only let them write documents their agency owns.
+   */
+  agencyId?: string;
 }
 
 export const notificationsService = {
@@ -44,6 +50,7 @@ export const notificationsService = {
   /** Broadcasts a new alert with auto color/time/createdAt. */
   async create(input: NotificationInput, actorUid?: string): Promise<string> {
     const ref = await addDoc(collection(db, COLLECTIONS.notifications), {
+      agencyId: input.agencyId?.trim() ?? '',
       kind: input.kind,
       title: input.title.trim(),
       body: input.body.trim(),

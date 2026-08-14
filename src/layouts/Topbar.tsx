@@ -54,7 +54,7 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
               {user?.displayName || user?.email || 'Admin'}
             </p>
             <div className="flex items-center justify-end">
-              {user?.isSuperAdmin ? (
+              {user?.role === 'super_admin' ? (
                 <Badge variant="default" className="mt-0.5">Super Admin</Badge>
               ) : (
                 <Badge variant="neutral" className="mt-0.5">Admin</Badge>

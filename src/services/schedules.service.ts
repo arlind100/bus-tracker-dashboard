@@ -60,9 +60,15 @@ export const schedulesService = {
   async create(input: ScheduleInput, actorUid?: string): Promise<string> {
     const now = Date.now();
     const id = `sch_${now}`;
+    // A timetable belongs to whichever agency owns its route. Read it here so
+    // ownership cannot be supplied (and therefore forged) by the caller.
+    const routeSnap = await getDoc(doc(db, COLLECTIONS.routes, input.routeId));
+    const agencyId = (routeSnap.data()?.agencyId as string | undefined) ?? '';
+
     await setDoc(doc(db, COLLECTIONS.schedules, id), {
       id,
       scheduleId: id,
+      agencyId,
       routeId: input.routeId,
       dayType: input.dayType,
       departureTime: input.departureTime,
@@ -76,8 +82,17 @@ export const schedulesService = {
   },
 
   async update(id: string, patch: Partial<ScheduleInput>, actorUid?: string): Promise<void> {
+    // Moving a timetable to another route moves its ownership too, otherwise
+    // the row would keep claiming an agency that no longer runs it.
+    let agency: { agencyId: string } | Record<string, never> = {};
+    if (patch.routeId) {
+      const routeSnap = await getDoc(doc(db, COLLECTIONS.routes, patch.routeId));
+      agency = { agencyId: (routeSnap.data()?.agencyId as string | undefined) ?? '' };
+    }
+
     await updateDoc(doc(db, COLLECTIONS.schedules, id), {
       ...patch,
+      ...agency,
       updatedAt: Date.now(),
       ...(actorUid ? { updatedBy: actorUid } : {}),
     });

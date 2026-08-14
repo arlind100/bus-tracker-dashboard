@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { busesService, type BusInput } from '@/services/buses.service';
-import { agenciesService } from '@/services/agencies.service';
+import { useAgencyScope } from '@/hooks/useAgencyScope';
 import { routesService } from '@/services/routes.service';
 import { driversService } from '@/services/drivers.service';
 import { useAuditLog } from '@/hooks/useAuditLog';
@@ -73,7 +73,7 @@ export function BusFormDialog({
   const { user } = useAuth();
   const isEdit = !!bus;
 
-  const { data: agencies } = useQuery({ queryKey: ['agencies'], queryFn: () => agenciesService.list(), enabled: open });
+  const { options: agencies, locked: agencyLocked, defaultAgencyId } = useAgencyScope(open);
   const { data: routes } = useQuery({ queryKey: ['routes'], queryFn: () => routesService.list(), enabled: open });
   const { data: driversData } = useQuery({ queryKey: ['drivers', user?.agencyId ?? 'all'], queryFn: () => driversService.list(user?.agencyId), enabled: open });
   const drivers = driversData?.drivers ?? [];
@@ -92,7 +92,7 @@ export function BusFormDialog({
   useEffect(() => {
     if (open) {
       reset({
-        agencyId: bus?.agencyId || NONE,
+        agencyId: bus?.agencyId || defaultAgencyId || NONE,
         routeId: bus?.routeId || NONE,
         plate: bus?.plate ?? '',
         busNumber: bus?.busNumber ?? '',
@@ -173,10 +173,10 @@ export function BusFormDialog({
                 control={control}
                 name="agencyId"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={agencyLocked}>
                     <SelectTrigger><SelectValue placeholder="No agency" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>No agency</SelectItem>
+                      {!agencyLocked && <SelectItem value={NONE}>No agency</SelectItem>}
                       {agencies?.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                     </SelectContent>
                   </Select>

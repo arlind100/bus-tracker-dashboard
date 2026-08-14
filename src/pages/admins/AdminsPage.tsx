@@ -157,7 +157,9 @@ export function AdminsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {admin.superAdmin ? <Badge>Super Admin</Badge> : <Badge variant="neutral">Admin</Badge>}
+                      {admin.role === 'super_admin'
+                        ? <Badge>Super Admin</Badge>
+                        : <Badge variant="neutral">Agency Admin</Badge>}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {admin.agencyId ? agencyNames[admin.agencyId] ?? admin.agencyId : 'Global'}

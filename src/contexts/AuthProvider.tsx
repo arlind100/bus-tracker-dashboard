@@ -51,12 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authService.login(email, password);
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    return authService.loginWithGoogle();
+  }, []);
+
   const logout = useCallback(async () => {
     await authService.logout();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, status, login, logout }}>
+    <AuthContext.Provider value={{ user, status, login, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

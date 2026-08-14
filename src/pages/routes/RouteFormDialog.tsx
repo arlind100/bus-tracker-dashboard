@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { routesService, type RouteInput, type StopSeed } from '@/services/routes.service';
-import { agenciesService } from '@/services/agencies.service';
+import { useAgencyScope } from '@/hooks/useAgencyScope';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
@@ -76,11 +76,7 @@ export function RouteFormDialog({
   const { user } = useAuth();
   const isEdit = !!route;
 
-  const { data: agencies } = useQuery({
-    queryKey: ['agencies'],
-    queryFn: () => agenciesService.list(),
-    enabled: open,
-  });
+  const { options: agencies, locked: agencyLocked, defaultAgencyId } = useAgencyScope(open);
 
   const {
     register,
@@ -110,7 +106,10 @@ export function RouteFormDialog({
   useEffect(() => {
     if (open) {
       reset({
-        agencyId: route?.agencyId || NO_AGENCY,
+        // An agency admin can only ever create inside their own agency, so the
+        // field is pre-filled with it rather than defaulting to "no agency" —
+        // which the security rules would reject on save.
+        agencyId: route?.agencyId || defaultAgencyId || NO_AGENCY,
         routeNumber: route?.routeNumber ?? '',
         name: route?.name ?? '',
         from: route?.from ?? '',
@@ -200,12 +199,12 @@ export function RouteFormDialog({
                 control={control}
                 name="agencyId"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={agencyLocked}>
                     <SelectTrigger>
                       <SelectValue placeholder="No agency" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_AGENCY}>No agency</SelectItem>
+                      {!agencyLocked && <SelectItem value={NO_AGENCY}>No agency</SelectItem>}
                       {agencies?.map(a => (
                         <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                       ))}

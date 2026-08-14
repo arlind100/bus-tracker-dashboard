@@ -65,6 +65,14 @@ export const stopsService = {
     const now = Date.now();
     const routeId = input.routeId ?? '';
     const name = input.name.trim();
+
+    // The owning route is read once, up front: it supplies both the ordered
+    // stops[] array to update and the agencyId this stop inherits. Ownership is
+    // never taken from the caller — it is whatever the route says — so a scoped
+    // admin cannot stamp another agency onto a stop.
+    const routeSnap = routeId ? await getDoc(doc(db, COLLECTIONS.routes, routeId)) : null;
+    const agencyId = (routeSnap?.data()?.agencyId as string | undefined) ?? '';
+
     const siblings = routeId ? await this.listForRoute(routeId) : [];
     const order = input.order ?? siblings.length + 1;
     // `stop_<routeId>_<order>` collides if that position already exists, so fall
@@ -76,6 +84,7 @@ export const stopsService = {
     batch.set(doc(db, COLLECTIONS.stops, id), {
       id,
       stopId: id,
+      agencyId,
       routeId,
       routes: routeId ? [routeId] : [],
       name,
@@ -89,20 +98,17 @@ export const stopsService = {
       ...(actorUid ? { createdBy: actorUid, updatedBy: actorUid } : {}),
     });
 
-    if (routeId) {
-      const routeSnap = await getDoc(doc(db, COLLECTIONS.routes, routeId));
-      if (routeSnap.exists()) {
-        const names = (routeSnap.data()?.stops as string[] | undefined) ?? [];
-        if (!names.includes(name)) {
-          // Insert at the stop's position so route.stops[] stays in travel order.
-          const next = [...names];
-          next.splice(Math.min(order - 1, next.length), 0, name);
-          batch.update(doc(db, COLLECTIONS.routes, routeId), {
-            stops: next,
-            updatedAt: now,
-            ...(actorUid ? { updatedBy: actorUid } : {}),
-          });
-        }
+    if (routeSnap?.exists()) {
+      const names = (routeSnap.data()?.stops as string[] | undefined) ?? [];
+      if (!names.includes(name)) {
+        // Insert at the stop's position so route.stops[] stays in travel order.
+        const next = [...names];
+        next.splice(Math.min(order - 1, next.length), 0, name);
+        batch.update(doc(db, COLLECTIONS.routes, routeId), {
+          stops: next,
+          updatedAt: now,
+          ...(actorUid ? { updatedBy: actorUid } : {}),
+        });
       }
     }
 

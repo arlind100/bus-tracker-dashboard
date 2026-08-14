@@ -50,7 +50,7 @@ const schema = z
     displayName: z.string().optional(),
     agencyId: z.string(),
     active: z.boolean(),
-    superAdmin: z.boolean(),
+    role: z.enum(['super_admin', 'agency_admin']),
   })
   .superRefine((v, ctx) => {
     if (v.mode === 'link' && !v.uid?.trim()) {
@@ -63,6 +63,16 @@ const schema = z
       if (!v.password || v.password.length < 8) {
         ctx.addIssue({ code: 'custom', path: ['password'], message: 'Use at least 8 characters' });
       }
+    }
+    // An agency administrator without an agency would be denied every write by
+    // the security rules, so refuse to create one rather than hand over a
+    // session that silently fails on everything.
+    if (v.role === 'agency_admin' && (!v.agencyId || v.agencyId === NO_AGENCY)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['agencyId'],
+        message: 'An agency administrator must be assigned to an agency',
+      });
     }
   });
 
@@ -98,7 +108,7 @@ export function AdminFormDialog({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { mode: 'create', uid: '', email: '', password: '', displayName: '', agencyId: NO_AGENCY, active: true, superAdmin: false },
+    defaultValues: { mode: 'create', uid: '', email: '', password: '', displayName: '', agencyId: NO_AGENCY, active: true, role: 'agency_admin' },
   });
 
   useEffect(() => {
@@ -111,7 +121,7 @@ export function AdminFormDialog({
         displayName: admin?.displayName ?? '',
         agencyId: admin?.agencyId || NO_AGENCY,
         active: admin?.active ?? true,
-        superAdmin: admin?.superAdmin ?? false,
+        role: admin?.role ?? 'agency_admin',
       });
     }
   }, [open, admin, reset]);
@@ -133,11 +143,11 @@ export function AdminFormDialog({
 
       await adminsService.upsert({
         uid,
+        role: values.role,
         email: values.email || undefined,
         displayName: values.displayName || undefined,
         agencyId: values.agencyId === NO_AGENCY ? '' : values.agencyId,
         active: values.active,
-        superAdmin: values.superAdmin,
         createdBy: user?.uid,
       });
 
@@ -171,7 +181,7 @@ export function AdminFormDialog({
   const mode = watch('mode');
   const emailValue = watch('email');
   const active = watch('active');
-  const superAdmin = watch('superAdmin');
+  const role = watch('role');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -179,7 +189,8 @@ export function AdminFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit administrator' : 'New administrator'}</DialogTitle>
           <DialogDescription>
-            The document keeps <code className="text-xs">role: "admin"</code> for mobile compatibility.
+            Authorization comes from this record alone — signing in with a password or with Google
+            grants nothing without it.
           </DialogDescription>
         </DialogHeader>
 
@@ -252,40 +263,57 @@ export function AdminFormDialog({
             </div>
           )}
 
-          <FormField label="Agency" hint="Scope this admin to an agency (foundation for the company-admin tier).">
+          <FormField
+            label="Role"
+            required
+            error={errors.role?.message}
+            hint="An agency administrator only ever sees and edits their own agency's data."
+          >
             <Controller
               control={control}
-              name="agencyId"
+              name="role"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="No agency (global)" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NO_AGENCY}>No agency (global)</SelectItem>
-                    {agencies?.map(a => (
-                      <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                    ))}
+                    <SelectItem value="agency_admin">Agency administrator</SelectItem>
+                    <SelectItem value="super_admin">Super administrator</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
           </FormField>
 
-          <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
-            <div>
-              <p className="text-sm font-medium">Active</p>
-              <p className="text-xs text-muted-foreground">Deactivating locks the admin out of both apps.</p>
-            </div>
-            <Switch checked={active} onCheckedChange={v => setValue('active', v)} />
-          </div>
+          {/* A super admin is global by definition, so the agency picker only
+              applies to the scoped tier — and there it is mandatory. */}
+          {role === 'agency_admin' && (
+            <FormField label="Agency" required error={errors.agencyId?.message}>
+              <Controller
+                control={control}
+                name="agencyId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an agency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_AGENCY}>Select an agency</SelectItem>
+                      {agencies?.map(a => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+          )}
 
           <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
             <div>
-              <p className="text-sm font-medium">Super Admin</p>
-              <p className="text-xs text-muted-foreground">Full platform access, including admin management.</p>
+              <p className="text-sm font-medium">Active</p>
+              <p className="text-xs text-muted-foreground">Deactivating revokes dashboard access immediately.</p>
             </div>
-            <Switch checked={superAdmin} onCheckedChange={v => setValue('superAdmin', v)} />
+            <Switch checked={active} onCheckedChange={v => setValue('active', v)} />
           </div>
 
           <div className="flex items-start gap-2 rounded-lg bg-accent/60 px-3 py-2.5 text-xs text-accent-foreground">

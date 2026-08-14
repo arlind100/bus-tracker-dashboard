@@ -12,11 +12,19 @@
 
 export type AppMode = 'passenger' | 'admin';
 
-// Additive super-admin tier. The mobile app only understands 'admin'; a super
-// admin keeps role: 'admin' and is distinguished by the `superAdmin` flag, so
-// the mobile gate (role === 'admin') keeps working unchanged. 'super_admin' is
-// reserved for a future distinct-role migration.
-export type UserRole = 'passenger' | 'admin' | 'super_admin';
+/**
+ * The two real administrator tiers. `role` on admins/{uid} is the SINGLE source
+ * of truth — there is no separate boolean flag to keep in sync, and
+ * firestore.rules reads this exact field.
+ *
+ *   super_admin  — owns the platform; manages agencies and the admins registry
+ *   agency_admin — belongs to exactly one agency (agencyId is mandatory) and may
+ *                  only read/write that agency's data
+ */
+export type AdminRole = 'super_admin' | 'agency_admin';
+
+/** Every identity the system recognises. Passengers hold no admin record. */
+export type UserRole = 'passenger' | AdminRole;
 
 /** The authenticated dashboard user, enriched with their admin record. */
 export interface AppUser {
@@ -24,31 +32,35 @@ export interface AppUser {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  role: UserRole;
-  /** True when the admins/{uid} doc carries superAdmin: true. */
+  role: AdminRole;
+  /** Convenience mirror of `role === 'super_admin'`. */
   isSuperAdmin: boolean;
-  /** Agency the admin is scoped to (undefined = global / unscoped). */
+  /** The agency this admin is scoped to. Always set for an agency_admin. */
   agencyId?: string;
 }
 
 // ─── admins/{uid} — the access-control gate ──────────────────────────────────────
 
 /**
- * admins/{uid} document. `active` + `role` are the exact fields the mobile app
- * and Firestore rules check — DO NOT rename or remove them. `superAdmin`,
- * `agencyId`, and metadata are safe additive fields for the dashboard.
+ * admins/{uid} — the ONLY thing that grants dashboard access. Being signed in to
+ * Firebase Auth (by password or Google) means nothing without one of these.
+ *
+ * `role` + `active` are read verbatim by firestore.rules; do not rename them.
+ * An `agency_admin` must carry a non-empty `agencyId` and a `super_admin` must
+ * not carry one — the rules reject writes that break either invariant.
  */
 export interface AdminRecord {
-  /** Mirrors the doc id (the Firebase Auth uid). Not stored by the mobile app. */
+  /** Mirrors the doc id (the Firebase Auth uid). */
   uid: string;
   email?: string;
   active: boolean;
-  role: 'admin';
-  superAdmin?: boolean;
+  role: AdminRole;
+  /** Required for agency_admin; absent/'' for super_admin. */
   agencyId?: string;
   displayName?: string;
   createdAt?: number;
   createdBy?: string;
+  updatedAt?: number;
 }
 
 // ─── agencies ────────────────────────────────────────────────────────────────
@@ -111,6 +123,8 @@ export interface Route {
 export interface Stop {
   id: string;
   stopId?: string;
+  /** Owning agency, denormalized from the route so rules can scope writes. */
+  agencyId?: string;
   routeId?: string;
   routes?: string[];
   name: string;
@@ -136,6 +150,8 @@ export type DayType = 'weekday' | 'weekend';
 export interface Schedule {
   id: string;
   scheduleId?: string;
+  /** Owning agency, denormalized from the route so rules can scope writes. */
+  agencyId?: string;
   routeId: string;
   dayType: DayType;
   departureTime: string;
@@ -210,6 +226,8 @@ export interface Bus {
 export interface BusLocation {
   id: string;
   busId: string;
+  /** Owning agency, denormalized from the bus so rules can scope writes. */
+  agencyId?: string;
   routeId?: string;
   currentStop?: string;
   nextStop?: string;
@@ -238,6 +256,8 @@ export type NotificationKind = 'delay' | 'arrive' | 'update';
 
 export interface Notification {
   id: string;
+  /** Agency that broadcast this alert; owns it for edit/delete purposes. */
+  agencyId?: string;
   kind: NotificationKind;
   title: string;
   body: string;

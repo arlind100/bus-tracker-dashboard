@@ -136,6 +136,9 @@ export const routesService = {
       batch.set(doc(db, COLLECTIONS.stops, stopId), {
         id: stopId,
         stopId,
+        // Inherited from the route so the rules can scope stop writes by agency
+        // without an extra document read on every write.
+        agencyId: input.agencyId?.trim() ?? '',
         routeId,
         routes: [routeId],
         name: stop.name.trim(),

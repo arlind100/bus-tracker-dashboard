@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { driversService, type DriverInput } from '@/services/drivers.service';
-import { agenciesService } from '@/services/agencies.service';
+import { useAgencyScope } from '@/hooks/useAgencyScope';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -63,11 +63,7 @@ export function DriverFormDialog({
   const { user } = useAuth();
   const isEdit = !!driver;
 
-  const { data: agencies } = useQuery({
-    queryKey: ['agencies'],
-    queryFn: () => agenciesService.list(),
-    enabled: open,
-  });
+  const { options: agencies, locked: agencyLocked, defaultAgencyId } = useAgencyScope(open);
 
   const {
     register,
@@ -92,7 +88,7 @@ export function DriverFormDialog({
     if (open) {
       reset({
         name: driver?.name ?? '',
-        agencyId: driver?.agencyId || NONE,
+        agencyId: driver?.agencyId || defaultAgencyId || NONE,
         licenseNumber: driver?.licenseNumber ?? '',
         phone: driver?.phone ?? '',
         email: driver?.email ?? '',
@@ -152,10 +148,10 @@ export function DriverFormDialog({
                 control={control}
                 name="agencyId"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={agencyLocked}>
                     <SelectTrigger><SelectValue placeholder="No agency" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>No agency</SelectItem>
+                      {!agencyLocked && <SelectItem value={NONE}>No agency</SelectItem>}
                       {agencies?.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                     </SelectContent>
                   </Select>

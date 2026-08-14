@@ -1,4 +1,4 @@
-# Bus Tracker — Super Admin Dashboard
+﻿# Bus Tracker — Super Admin Dashboard
 
 A production-grade web dashboard for operating the **Bus Tracker** platform. It
 connects to the **same Firebase backend** (`bus-tracker-capstone`) as the Bus
@@ -73,13 +73,36 @@ should record an `adminUpdates` audit entry via `lib/firestore.logAdminUpdate`.
 
 ## Roles & access
 
-- Access is gated by the `admins/{uid}` document — **exactly** as the mobile app:
-  the doc must exist, `active === true`, and `role === 'admin'`.
-- **Super Admin** is the additive, non-breaking strategy from the handoff: keep
-  `role: 'admin'` and add `superAdmin: true`. The mobile gate still passes; the
-  dashboard unlocks super-only features (admin management) on `superAdmin === true`.
-- `agencyId` on an admin doc is the foundation for a future scoped "company
-  admin" tier (queries and rules are structured to adopt it later).
+**Authentication proves who you are; `admins/{uid}` decides what you may do.**
+Signing in — by password or with Google — grants nothing on its own. Access
+requires an `admins/{uid}` document that exists, is `active`, and carries one of
+two roles. `role` is the single source of truth; there is no second flag.
+
+| `role` | Scope |
+|---|---|
+| `super_admin` | The whole platform. Manages agencies and the admins registry. Carries no `agencyId`. |
+| `agency_admin` | Exactly one agency — **`agencyId` is mandatory**. Reads and writes only that agency's routes, stops, buses, drivers, schedules, checkpoints and alerts. |
+
+Both the dashboard and `firestore.rules` apply the same gate, so bypassing the
+UI and calling Firestore directly changes nothing. The rules additionally reject:
+an `agency_admin` with no agency, a `super_admin` carrying one, an invented role,
+an admin changing their own role or agency, and a super admin demoting or
+deactivating themselves.
+
+### Sign-in methods
+
+Email/password and **Google** both funnel through the same `resolveUser()` gate.
+A Google account with no admin record is signed straight back out with an
+explicit message — it is **never** provisioned an admin document, a role or an
+agency. To authorize one, a super admin adds its Firebase Auth uid on the
+Administrators page ("Link existing UID").
+
+### Provisioning an agency user
+
+Administrators → **New administrator** → *Create new account*: the dashboard
+creates the Firebase Auth account on an isolated secondary app (so your own
+session is untouched), then writes the scoped `admins/{uid}` record. Choosing
+*Agency administrator* makes the agency field mandatory.
 
 ### Creating the first super admin
 
@@ -97,11 +120,13 @@ the dashboard's **Admins** page.
 
 ## Firestore rules
 
-The rules are **deployed and verified**. They enforce five tiers (public,
-signed-in passenger, admin, agency-scoped admin, super admin), protect driver
-PII, prevent privilege escalation and self-lock-out, make the audit log
-append-only, and stop audit attribution (`createdBy` / `updatedBy`) from being
-spoofed.
+The rules are **deployed and verified**. They enforce four tiers (public,
+signed-in passenger, `agency_admin`, `super_admin`), scope every agency-owned
+collection — routes, stops, buses, schedules, checkpoints, alerts and drivers —
+to its owning agency, protect driver PII, prevent privilege escalation and
+self-lock-out, keep the admins registry unreadable to non-admins, make the audit
+log append-only, and stop audit attribution (`createdBy` / `updatedBy`) from
+being spoofed.
 
 They live in the mobile repo (`bus-tracker/firestore.rules`) because they are
 shared project-wide. Deploy and re-verify any change from there:
@@ -109,7 +134,7 @@ shared project-wide. Deploy and re-verify any change from there:
 ```bash
 cd ../bus-tracker
 firebase deploy --only firestore:rules
-npm run verify:rules    # 37 live allow/deny assertions
+npm run verify:rules    # 62 live allow/deny assertions
 ```
 
 The full matrix and rationale are in [`docs/FIRESTORE_RULES.md`](docs/FIRESTORE_RULES.md).

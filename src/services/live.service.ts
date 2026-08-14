@@ -14,6 +14,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   onSnapshot,
@@ -73,7 +74,13 @@ export const liveService = {
     update: BusLocationUpdate,
     actorUid?: string,
   ): Promise<void> {
-    const payload: Record<string, unknown> = { busId, id: busId, updatedAt: Date.now() };
+    // A checkpoint belongs to whichever agency owns the bus. Read it from the
+    // bus rather than trusting the caller, so a scoped admin cannot write a
+    // checkpoint stamped with another agency.
+    const busSnap = await getDoc(doc(db, COLLECTIONS.buses, busId));
+    const agencyId = (busSnap.data()?.agencyId as string | undefined) ?? '';
+
+    const payload: Record<string, unknown> = { busId, id: busId, agencyId, updatedAt: Date.now() };
     if (update.status !== undefined) payload.status = update.status;
     if (update.currentStop !== undefined) payload.currentStop = update.currentStop;
     if (update.nextStop !== undefined) payload.nextStop = update.nextStop;
