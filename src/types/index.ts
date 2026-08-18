@@ -43,7 +43,7 @@ export interface AppUser {
 
 /**
  * admins/{uid} — the ONLY thing that grants dashboard access. Being signed in to
- * Firebase Auth (by password or Google) means nothing without one of these.
+ * Firebase Auth means nothing without one of these.
  *
  * `role` + `active` are read verbatim by firestore.rules; do not rename them.
  * An `agency_admin` must carry a non-empty `agencyId` and a `super_admin` must

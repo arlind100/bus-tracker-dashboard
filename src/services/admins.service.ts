@@ -3,15 +3,14 @@
 // This collection IS the authorization system. Writing a record here is what
 // turns an authenticated identity into an administrator; nothing else does.
 // Writes are gated on isSuperAdmin() in firestore.rules, so only a super admin
-// can provision anyone — including through Google sign-in, which resolves
-// against these records and provisions nothing on its own.
+// can provision anyone. Sign-in resolves against these records and provisions
+// nothing on its own.
 //
 // The doc id IS the Firebase Auth uid. Two ways to obtain one:
 //   - adminProvisioningService.createAuthAccount() creates the Auth account from
 //     the dashboard (on an isolated secondary app, so the super admin's own
 //     session is untouched), then this service writes the record; or
-//   - paste the uid of an account created in the Firebase Console (this is how
-//     you authorize an existing Google account).
+//   - paste the uid of an account created directly in the Firebase Console.
 //
 // `role` is the single source of truth for the tier, and the rules validate it:
 //   super_admin  — platform-wide; must NOT carry an agencyId

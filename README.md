@@ -74,7 +74,7 @@ should record an `adminUpdates` audit entry via `lib/firestore.logAdminUpdate`.
 ## Roles & access
 
 **Authentication proves who you are; `admins/{uid}` decides what you may do.**
-Signing in — by password or with Google — grants nothing on its own. Access
+Signing in grants nothing on its own. Access
 requires an `admins/{uid}` document that exists, is `active`, and carries one of
 two roles. `role` is the single source of truth; there is no second flag.
 
@@ -91,11 +91,14 @@ deactivating themselves.
 
 ### Sign-in methods
 
-Email/password and **Google** both funnel through the same `resolveUser()` gate.
-A Google account with no admin record is signed straight back out with an
-explicit message — it is **never** provisioned an admin document, a role or an
-agency. To authorize one, a super admin adds its Firebase Auth uid on the
-Administrators page ("Link existing UID").
+**Email and password only.** There is no federated sign-in and no self sign-up:
+every account is one a super admin created on the Administrators page, either by
+having the dashboard create the Auth account or by linking an existing Firebase
+Auth uid.
+
+Sign-in funnels through `resolveUser()`, and an account with no active admin
+record is signed straight back out — it is **never** provisioned an admin
+document, a role or an agency.
 
 ### Provisioning an agency user
 
@@ -178,10 +181,10 @@ cd bus-tracker-dashboard && npm install && npm run dev
 cd bus-tracker && npm install && npm run web
 ```
 
-`npm run web` pins port 8081 on purpose: that exact origin is what the Google
-OAuth web client must authorize, and Expo would otherwise drift to the next free
-port. The only scripts this project defines are `dev`, `build`, `lint` and
-`preview`.
+`npm run web` pins port 8081 on purpose: that exact origin is what the passenger
+app's Google OAuth web client must authorize, and Expo would otherwise drift to
+the next free port. (The dashboard itself has no Google sign-in.) The only
+scripts this project defines are `dev`, `build`, `lint` and `preview`.
 
 Quality gates:
 
@@ -204,5 +207,5 @@ the production build.
 
 **Requires you:** nothing for the dashboard itself. Deploying it to a real domain
 needs that domain added under Firebase Console → Authentication → Settings →
-**Authorized domains** (localhost already works). Google sign-in items are
-mobile-only — see `../bus-tracker/README.md` → *Deployment status*.
+**Authorized domains** (localhost already works). Google sign-in is mobile-only
+— see `../bus-tracker/README.md` → *Deployment status*.

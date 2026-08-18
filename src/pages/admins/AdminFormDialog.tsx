@@ -189,8 +189,8 @@ export function AdminFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit administrator' : 'New administrator'}</DialogTitle>
           <DialogDescription>
-            Authorization comes from this record alone — signing in with a password or with Google
-            grants nothing without it.
+            Authorization comes from this record alone — a password sign-in grants nothing
+            without it.
           </DialogDescription>
         </DialogHeader>
 

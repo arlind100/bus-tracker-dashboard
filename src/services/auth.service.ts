@@ -1,7 +1,7 @@
 // Auth abstraction for the Super Admin Dashboard.
 //
 // AUTHENTICATION vs AUTHORIZATION — the distinction this file exists to keep:
-//   - Firebase Auth (password OR Google) proves WHO you are. It grants nothing.
+//   - Firebase Auth (email + password) proves WHO you are. It grants nothing.
 //   - admins/{uid} decides WHAT you may do. It is the only authoritative signal,
 //     and only a super admin can write it (enforced in firestore.rules).
 //
@@ -14,13 +14,17 @@
 // No sign-in path provisions anything. An authenticated account with no admin
 // record is simply not an administrator.
 //
+// There is exactly ONE way in: email + password, against an account a super
+// admin created on the Administrators page. Federated sign-in was removed
+// deliberately — it let anyone with a Google account reach the password-less
+// half of the gate, and every identity that matters here is one the super
+// admin issued in the first place. Fewer doors, and each one has a known key.
+//
 // Components never call the Firebase auth SDK directly — they go through here
 // (and the AuthContext, which owns the onAuthStateChanged subscription).
 
 import {
   signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
@@ -127,52 +131,6 @@ export const authService = {
     if (!appUser) {
       await firebaseSignOut(auth);
       throw new Error('This account does not have admin access.');
-    }
-    return appUser;
-  },
-
-  /**
-   * Signs in with Google, then applies the SAME authorization gate as the
-   * password path: the account is admitted only if a super admin has already
-   * provisioned an active admins/{uid} record for it.
-   *
-   * There is deliberately no provisioning here. A Google account that nobody
-   * authorized is signed straight back out — it does not become an admin, does
-   * not get an agency, and no admins document is created for it. That is the
-   * whole point: authentication proves identity, authorization comes only from
-   * a record a super admin wrote, and firestore.rules enforce the same thing
-   * server-side even if this check were bypassed.
-   *
-   * Uses a popup rather than a redirect so the OAuth round trip goes through
-   * Firebase's own handler on the project's authDomain — an origin Google
-   * already trusts — instead of requiring every dashboard origin to be
-   * registered as an OAuth redirect URI.
-   */
-  async loginWithGoogle(): Promise<AppUser> {
-    const provider = new GoogleAuthProvider();
-    // Always show the chooser: an operator switching between a personal and an
-    // administrator Google account should not be silently reused.
-    provider.setCustomParameters({ prompt: 'select_account' });
-
-    const { user: fbUser } = await signInWithPopup(auth, provider);
-
-    let appUser: AppUser | null;
-    try {
-      appUser = await this.resolveUser(fbUser);
-    } catch (err) {
-      console.error('[authService] Google login verification failed:', err);
-      await firebaseSignOut(auth);
-      throw new Error('Could not verify your access. Check your connection and try again.', {
-        cause: err,
-      });
-    }
-
-    if (!appUser) {
-      await firebaseSignOut(auth);
-      throw new Error(
-        `${fbUser.email ?? 'That Google account'} is not authorized for the dashboard. ` +
-          'Ask a super admin to add it on the Administrators page first.',
-      );
     }
     return appUser;
   },
