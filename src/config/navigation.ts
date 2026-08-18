@@ -11,7 +11,6 @@ import {
   CalendarClock,
   Bell,
   TriangleAlert,
-  BarChart3,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -57,9 +56,5 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Notifications', path: '/notifications', icon: Bell },
       { label: 'Issues', path: '/issues', icon: TriangleAlert },
     ],
-  },
-  {
-    title: 'Insights',
-    items: [{ label: 'Analytics', path: '/analytics', icon: BarChart3 }],
   },
 ];

@@ -14,7 +14,6 @@ import { LiveOperationsPage } from '@/pages/live/LiveOperationsPage';
 import { SchedulesPage } from '@/pages/schedules/SchedulesPage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
 import { IssuesPage } from '@/pages/issues/IssuesPage';
-import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 
 export default function App() {
   return (
@@ -47,7 +46,6 @@ export default function App() {
         <Route path="schedules" element={<SchedulesPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="issues" element={<IssuesPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
