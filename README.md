@@ -49,8 +49,8 @@ src/
   types/         canonical types mirroring Firestore document shapes
   lib/           utils (cn, formatters) · firestore (timeout, name-maps, audit log)
   services/      ONE file per collection — all Firebase logic lives here
-  contexts/      Auth + Theme providers (own the Firebase subscriptions)
-  hooks/         useAuth · useTheme
+  contexts/      Auth provider (owns the Firebase subscriptions)
+  hooks/         useAuth
   components/    ProtectedRoute · PageHeader · StatCard · ui/* (shadcn-style)
   layouts/       DashboardLayout · Sidebar · Topbar
   pages/         LoginPage · OverviewPage · agencies · admins · routes · stops ·

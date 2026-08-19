@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Menu, Sun, Moon, LogOut } from 'lucide-react';
-import { useTheme } from '@/hooks/useTheme';
+import { Menu, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +12,6 @@ function initials(name?: string | null, email?: string | null): string {
 }
 
 export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
-  const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -39,15 +37,6 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
       </Button>
 
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? <Sun /> : <Moon />}
-        </Button>
-
         <div className="hidden items-center gap-3 sm:flex">
           <div className="text-right leading-tight">
             <p className="max-w-[180px] truncate text-sm font-medium text-foreground">

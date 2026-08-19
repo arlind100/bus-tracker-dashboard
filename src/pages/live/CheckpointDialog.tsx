@@ -229,7 +229,7 @@ function CheckpointForm({
           </FormField>
 
           {missingCoords && (
-            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2.5 text-xs text-amber-700">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
               <span>
                 “{currentStop}” has no coordinates, so this checkpoint cannot report a position and

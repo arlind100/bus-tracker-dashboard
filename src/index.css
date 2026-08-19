@@ -1,13 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Dark mode is class-driven (.dark on <html>) so it can be toggled explicitly. */
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* ─── Design tokens ───────────────────────────────────────────────────────────
    Anthropic/Claude-inspired: warm, calm neutrals with a deep-blue brand accent.
-   Light + dark are raw CSS variables, exposed to Tailwind as semantic color
-   utilities (bg-background, text-foreground, border-border, …) via @theme inline. */
+   Raw CSS variables, exposed to Tailwind as semantic color utilities
+   (bg-background, text-foreground, border-border, …) via @theme inline. */
 
 :root {
   --background:             #faf9f6;  /* warm ivory */
@@ -48,45 +45,6 @@
   --sidebar-accent:         #e9e6dd;
 
   --radius:                 0.75rem;
-}
-
-.dark {
-  --background:             #0f1115;  /* deep slate */
-  --foreground:             #e9e8e4;
-
-  --card:                   #16191f;
-  --card-foreground:        #e9e8e4;
-
-  --popover:                #16191f;
-  --popover-foreground:     #e9e8e4;
-
-  --primary:                #3b82f6;  /* brighter blue on dark */
-  --primary-foreground:     #0b0f16;
-  --primary-hover:          #4f8df8;
-
-  --secondary:              #1d212a;
-  --secondary-foreground:   #d7d6d1;
-
-  --muted:                  #1d212a;
-  --muted-foreground:       #9a9ca3;
-
-  --accent:                 #1a2740;
-  --accent-foreground:      #93b4fb;
-
-  --destructive:            #e5534b;
-  --destructive-foreground: #fef2f2;
-
-  --success:                #4ade80;
-  --warning:                #f59e0b;
-
-  --border:                 #262b35;
-  --input:                  #2a2f3a;
-  --ring:                   #3b82f6;
-
-  --sidebar:                #12151b;
-  --sidebar-foreground:     #c9c8c3;
-  --sidebar-border:         #23272f;
-  --sidebar-accent:         #1c212b;
 }
 
 @theme inline {
