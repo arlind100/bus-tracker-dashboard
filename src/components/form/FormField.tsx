@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Label } from '@/components/ui/label';
 
-/** Label + control + validation message row used across all dashboard forms. */
 export function FormField({
   label,
   htmlFor,

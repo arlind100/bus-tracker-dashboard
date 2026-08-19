@@ -1,7 +1,6 @@
 import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-/** Scroll container so wide tables never break the page layout. */
 export function TableContainer({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div

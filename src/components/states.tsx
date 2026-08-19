@@ -3,7 +3,6 @@ import { Inbox, CircleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 
-/** Reusable empty state for lists/tables with no data. */
 export function EmptyState({
   icon: Icon = Inbox,
   title,
@@ -31,7 +30,6 @@ export function EmptyState({
   );
 }
 
-/** Reusable error state with an optional retry. */
 export function ErrorState({
   title = 'Something went wrong',
   description = 'We could not load this data. Please try again.',

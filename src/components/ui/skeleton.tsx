@@ -5,7 +5,6 @@ export function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>
   return <div className={cn('animate-pulse rounded-md bg-muted', className)} {...props} />;
 }
 
-/** A skeleton placeholder shaped like a data table while it loads. */
 export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   return (
     <div className="w-full overflow-hidden rounded-xl border border-border bg-card">

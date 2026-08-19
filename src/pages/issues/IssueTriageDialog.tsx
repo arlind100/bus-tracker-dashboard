@@ -60,8 +60,6 @@ export function IssueTriageDialog({
   );
 }
 
-// State is seeded from the report via useState initializers and the form is keyed
-// by report id, so it resets cleanly on each open without a state-syncing effect.
 function IssueTriageForm({
   report,
   routeNames,
@@ -111,12 +109,10 @@ function IssueTriageForm({
       </DialogHeader>
 
       <div className="flex flex-col gap-4">
-          {/* Report body */}
           <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm text-foreground">
             {report.description || 'No description provided.'}
           </div>
 
-          {/* Meta */}
           <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             {report.routeId && (
               <span className="inline-flex items-center gap-1.5">

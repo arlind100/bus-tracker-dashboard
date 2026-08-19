@@ -32,23 +32,6 @@ import type { Bus, BusLocation, Route } from '@/types';
 
 const KEEP = '__keep__';
 
-/**
- * Where the operator is reporting the vehicle to be, in real coordinates.
- *
- * The passenger app draws a bus ONLY at the lat/lng stored on its checkpoint
- * (see mobile utils/transit.ts → locationFreshness); a checkpoint without
- * coordinates is treated as "position unknown" and the bus is left off the map
- * entirely. So a checkpoint that names stops but carries no coordinates is
- * invisible to passengers — this resolves them from the route's stop documents.
- *
- * The position is derived HERE, at write time, from what the operator actually
- * entered (current stop, next stop, progress), and is stored once. The
- * passenger app still renders exactly what is stored and never interpolates or
- * animates — the invariant that matters is that no client invents a position.
- *
- * Returns null when the stops carry no coordinates, so the caller can leave the
- * checkpoint's existing position untouched rather than write a guess.
- */
 function resolvePosition(
   coords: Map<string, { lat: number; lng: number }>,
   currentStop: string,
@@ -61,8 +44,6 @@ function resolvePosition(
   const to = coords.get(nextStop);
   if (!to || progress <= 0) return from;
 
-  // Between two known stops the operator's progress fraction places the vehicle
-  // along the segment joining them.
   return {
     lat: from.lat + (to.lat - from.lat) * progress,
     lng: from.lng + (to.lng - from.lng) * progress,
@@ -99,8 +80,6 @@ export function CheckpointDialog({
   );
 }
 
-// State is seeded from props via useState initializers and the form is keyed by
-// bus id, so it resets cleanly on each open without a state-syncing effect.
 function CheckpointForm({
   bus,
   route,
@@ -122,14 +101,10 @@ function CheckpointForm({
   const [progress, setProgress] = useState(
     Math.round((location?.progress ?? bus.progress ?? 0) * 100),
   );
-  // Defaults ON for a bus the automation currently owns: someone opening this
-  // dialog is correcting a position, and a correction the next tick erases a
-  // minute later is not a correction. Turning it off hands the bus back.
   const [held, setHeld] = useState(bus.manualOverride ?? true);
 
   const stopOptions = route?.stops ?? [];
 
-  // The route's stop documents carry the coordinates the checkpoint needs.
   const { data: routeStops } = useQuery({
     queryKey: ['stops', 'for-route', route?.id],
     queryFn: () => stopsService.listForRoute(route!.id),
@@ -144,7 +119,6 @@ function CheckpointForm({
   }
 
   const position = resolvePosition(stopCoords, currentStop, nextStop, progress / 100);
-  // Warn only once the operator has picked a stop — an empty form is not a fault.
   const missingCoords = !!currentStop && !position;
 
   const mutation = useMutation({
@@ -156,15 +130,11 @@ function CheckpointForm({
           currentStop: currentStop || undefined,
           nextStop: nextStop || undefined,
           progress: progress / 100,
-          // Omitted when unresolvable, so a merge keeps any previously reported
-          // position instead of overwriting it with nothing.
           lat: position?.lat,
           lng: position?.lng,
         },
         user?.uid,
       );
-      // After the checkpoint, so a failed write never leaves a bus held with no
-      // position to show for it.
       if (held !== (bus.manualOverride ?? false)) {
         await liveService.setManualOverride(bus.id, held, user?.uid);
       }

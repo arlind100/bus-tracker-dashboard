@@ -19,9 +19,6 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // shadcn-style UI primitives co-locate a `cva` variants constant with the
-      // component (e.g. buttonVariants). That is a safe constant export for Fast
-      // Refresh, so allow it rather than fragmenting every primitive into two files.
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

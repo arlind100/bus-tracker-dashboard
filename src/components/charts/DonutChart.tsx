@@ -6,7 +6,6 @@ export interface DonutDatum {
   color: string;
 }
 
-/** Donut/pie chart with a centered total. Renders an empty hint when all-zero. */
 export function DonutChart({
   data,
   centerLabel,

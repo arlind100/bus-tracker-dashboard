@@ -1,11 +1,3 @@
-// Firestore collection name constants.
-//
-// Copied VERBATIM from the Bus Tracker mobile app (src/firebase/collections.ts)
-// so both clients read/write the exact same collections. Never hardcode a
-// collection-name string elsewhere — always import COLLECTIONS from here.
-//
-// ⚠️ Do NOT rename these. The mobile app + Firestore documents depend on them.
-
 export const COLLECTIONS = {
   users:         'users',
   admins:        'admins',
@@ -18,8 +10,6 @@ export const COLLECTIONS = {
   issueReports:  'issueReports',
   notifications: 'notifications',
   adminUpdates:  'adminUpdates',
-  // Dashboard-only personnel collection. The mobile app does not read it — it
-  // renders the denormalized `buses.driver` name string instead.
   drivers:       'drivers',
 } as const;
 

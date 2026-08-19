@@ -106,9 +106,6 @@ export function RouteFormDialog({
   useEffect(() => {
     if (open) {
       reset({
-        // An agency admin can only ever create inside their own agency, so the
-        // field is pre-filled with it rather than defaulting to "no agency" —
-        // which the security rules would reject on save.
         agencyId: route?.agencyId || defaultAgencyId || NO_AGENCY,
         routeNumber: route?.routeNumber ?? '',
         name: route?.name ?? '',
@@ -146,9 +143,6 @@ export function RouteFormDialog({
         return route.id;
       }
 
-      // If every stop has valid coordinates, create the route AND stop docs
-      // atomically (mirrors the mobile createRouteWithStops). Otherwise create
-      // the route with its stop-name array only.
       const seeds: StopSeed[] = [];
       let allHaveCoords = values.stops.length > 0;
       for (const s of values.stops) {
@@ -279,7 +273,6 @@ export function RouteFormDialog({
             />
           </FormField>
 
-          {/* Stops editor */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">Stops <span className="text-muted-foreground">(in order)</span></p>

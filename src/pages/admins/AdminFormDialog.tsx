@@ -36,11 +36,6 @@ import type { AdminRecord } from '@/types';
 
 const NO_AGENCY = '__none__';
 
-// Two ways to create an admin:
-//   'create' — provision a new Firebase Auth account from here (the dashboard
-//              creates it on an isolated app instance, so this session stays)
-//   'link'   — attach an admin record to an Auth uid that already exists
-
 const schema = z
   .object({
     mode: z.enum(['create', 'link']),
@@ -64,9 +59,6 @@ const schema = z
         ctx.addIssue({ code: 'custom', path: ['password'], message: 'Use at least 8 characters' });
       }
     }
-    // An agency administrator without an agency would be denied every write by
-    // the security rules, so refuse to create one rather than hand over a
-    // session that silently fails on everything.
     if (v.role === 'agency_admin' && (!v.agencyId || v.agencyId === NO_AGENCY)) {
       ctx.addIssue({
         code: 'custom',
@@ -128,8 +120,6 @@ export function AdminFormDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      // Creating an Auth account first, so the admin record is always written
-      // against a uid that really exists.
       let uid = values.uid?.trim() ?? '';
       let provisioned = false;
       if (!isEdit && values.mode === 'create') {
@@ -284,8 +274,6 @@ export function AdminFormDialog({
             />
           </FormField>
 
-          {/* A super admin is global by definition, so the agency picker only
-              applies to the scoped tier — and there it is mandatory. */}
           {role === 'agency_admin' && (
             <FormField label="Agency" required error={errors.agencyId?.message}>
               <Controller

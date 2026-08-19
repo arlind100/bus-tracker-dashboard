@@ -75,7 +75,6 @@ export function AgencyDetailPage() {
         actions={<ActiveBadge active={agency.active} />}
       />
 
-      {/* Contact + summary */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <InfoCard icon={MapPin} label="City" value={agency.city || '—'} />
         <InfoCard icon={Phone} label="Phone" value={agency.phone || '—'} />
@@ -95,7 +94,6 @@ export function AgencyDetailPage() {
           </TabsList>
         </div>
 
-        {/* Routes */}
         <TabsContent value="routes">
           {routes.length === 0 ? (
             <EmptyCard icon={RouteIcon} label="No routes for this agency." />
@@ -137,7 +135,6 @@ export function AgencyDetailPage() {
           )}
         </TabsContent>
 
-        {/* Fleet */}
         <TabsContent value="fleet">
           {buses.length === 0 ? (
             <EmptyCard icon={Bus} label="No buses for this agency." />
@@ -171,7 +168,6 @@ export function AgencyDetailPage() {
           )}
         </TabsContent>
 
-        {/* Stops */}
         <TabsContent value="stops">
           {stops.length === 0 ? (
             <EmptyCard icon={MapPin} label="No stops for this agency." />
@@ -205,7 +201,6 @@ export function AgencyDetailPage() {
           )}
         </TabsContent>
 
-        {/* Admins */}
         <TabsContent value="admins">
           {admins.length === 0 ? (
             <EmptyCard icon={ShieldCheck} label="No administrators assigned to this agency." />
@@ -237,7 +232,6 @@ export function AgencyDetailPage() {
           )}
         </TabsContent>
 
-        {/* Issues */}
         <TabsContent value="issues">
           {issues.length === 0 ? (
             <EmptyCard icon={TriangleAlert} label="No issue reports linked to this agency’s routes." />
@@ -267,7 +261,6 @@ export function AgencyDetailPage() {
           )}
         </TabsContent>
 
-        {/* Notifications */}
         <TabsContent value="notifications">
           {notifications.length === 0 ? (
             <EmptyCard

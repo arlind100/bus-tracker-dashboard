@@ -1,10 +1,5 @@
 import { useMemo, useState } from 'react';
 
-/**
- * Client-side search + pagination for list pages. Filtering runs against a
- * caller-provided text accessor; paging resets to page 1 whenever the filtered
- * result set shrinks below the current page.
- */
 export function useDataTable<T>({
   items,
   searchText,

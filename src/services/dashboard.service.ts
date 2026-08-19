@@ -1,14 +1,3 @@
-// Dashboard aggregate data layer — cross-collection KPIs for the Overview page.
-//
-// Mirrors the mobile admin.service.getDashboardStats: fetches whole collections
-// and computes counts client-side (the client SDK has no server aggregation).
-//
-// A read that fails or times out THROWS. It must not resolve to an empty result:
-// "0 agencies, 0 routes, 0 buses" is exactly what a brand-new backend looks like,
-// so returning zeros on failure tells an operator their platform is empty when
-// the truth is that we could not read it. The Overview catches the throw and
-// renders a retryable error instead.
-
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
@@ -45,7 +34,6 @@ async function fetchStats(): Promise<DashboardStats> {
   const issueReports = issuesSnap.docs.map(d => toDoc<IssueReport>(d));
   const notifications = notifSnap.docs.map(d => toDoc<Notification>(d));
 
-  // Fleet status breakdown.
   let activeBuses = 0;
   let offlineBuses = 0;
   let maintenanceBuses = 0;
@@ -59,7 +47,6 @@ async function fetchStats(): Promise<DashboardStats> {
     busesByAgency[aid] = (busesByAgency[aid] ?? 0) + 1;
   });
 
-  // Routes per agency + active route count.
   let activeRoutes = 0;
   const routesByAgency: Record<string, number> = {};
   routesSnap.docs.forEach(d => {
@@ -69,7 +56,6 @@ async function fetchStats(): Promise<DashboardStats> {
     routesByAgency[aid] = (routesByAgency[aid] ?? 0) + 1;
   });
 
-  // Issues by category + open/resolved counts.
   const issuesByCategory = zeroIssuesByCategory();
   let resolvedIssueReports = 0;
   issueReports.forEach(r => {
@@ -101,11 +87,6 @@ async function fetchStats(): Promise<DashboardStats> {
 }
 
 export const dashboardService = {
-  /**
-   * Fetches KPI stats. Throws on failure or after FETCH_TIMEOUT_MS so the caller
-   * can show a retryable error — never resolves to zeros, which would be
-   * indistinguishable from an empty backend.
-   */
   async getStats(): Promise<DashboardStats> {
     const result = await withTimeout(fetchStats());
     if (result === TIMEOUT) {

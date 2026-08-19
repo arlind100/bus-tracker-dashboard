@@ -5,7 +5,6 @@ export function Spinner({ className }: { className?: string }) {
   return <Loader2 className={cn('animate-spin text-muted-foreground', className)} />;
 }
 
-/** Full-area centered loading state. */
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
   return (
     <div className="flex min-h-[40vh] w-full flex-col items-center justify-center gap-3 text-muted-foreground">

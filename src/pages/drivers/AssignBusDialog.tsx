@@ -28,11 +28,6 @@ import type { Driver } from '@/types';
 
 const UNASSIGNED = '__unassigned__';
 
-/**
- * Assigns a driver to a bus (or clears it). The service keeps both sides of the
- * relationship consistent and refreshes the denormalized `buses.driver` name
- * that the mobile app renders.
- */
 export function AssignBusDialog({
   open,
   onOpenChange,
@@ -45,8 +40,6 @@ export function AssignBusDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        {/* Keyed on the driver so the form remounts with fresh initial state —
-            avoids syncing props into state via an effect. */}
         {driver && <AssignBusForm key={driver.id} driver={driver} onDone={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>

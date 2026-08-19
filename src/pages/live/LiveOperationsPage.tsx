@@ -29,7 +29,6 @@ export function LiveOperationsPage() {
     queryFn: () => liveService.getLiveData(),
   });
 
-  // Realtime overlay of bus locations (reads only — no interval writes).
   const [liveLocations, setLiveLocations] = useState<Record<string, BusLocation> | null>(null);
   useEffect(() => {
     const unsub = liveService.subscribeToLocations(locations => {
@@ -51,11 +50,6 @@ export function LiveOperationsPage() {
 
   const effectiveStatus = (bus: Bus): string => locations[bus.id]?.status || bus.status || 'Offline';
 
-  // A bus is drawn ONLY where its checkpoint says it is. There is deliberately
-  // no fallback to the route's first path point: that would put a marker on the
-  // map for a vehicle nobody reported, which is indistinguishable from a real
-  // position once drawn. This matches the passenger app, which omits a bus with
-  // no reported coordinates rather than guessing one.
   const positionFor = (bus: Bus): [number, number] | null => {
     const loc = locations[bus.id];
     if (loc?.lat != null && loc?.lng != null) return [loc.lat, loc.lng];
@@ -145,7 +139,6 @@ export function LiveOperationsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr]">
-        {/* Bus list panel */}
         <Card className="flex h-[calc(100svh-15rem)] min-h-[420px] flex-col overflow-hidden">
           <div className="border-b border-border p-3">
             <SearchInput value={search} onChange={setSearch} placeholder="Search fleet…" />
@@ -207,7 +200,6 @@ export function LiveOperationsPage() {
           </div>
         </Card>
 
-        {/* Map + selected detail */}
         <div className="flex flex-col gap-4">
           <Card className="h-[calc(100svh-15rem)] min-h-[420px] overflow-hidden p-0">
             <LiveMap
@@ -229,8 +221,6 @@ export function LiveOperationsPage() {
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-foreground">{selectedBus.busNumber || selectedBus.id}</p>
                     <BusStatusBadge status={(effectiveStatus(selectedBus) as BusStatus)} />
-                    {/* A held bus never moves. Without this it looks identical to a
-                        running one, and the stillness reads as a broken feed. */}
                     {selectedBus.manualOverride && (
                       <Badge variant="neutral" title="Automatic updates are paused for this bus">
                         Manual hold

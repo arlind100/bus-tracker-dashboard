@@ -17,7 +17,6 @@ export interface NavItem {
   label: string;
   path: string;
   icon: LucideIcon;
-  /** Only visible to super admins. */
   superAdminOnly?: boolean;
 }
 
@@ -26,7 +25,6 @@ export interface NavSection {
   items: NavItem[];
 }
 
-/** Sidebar structure. Paths must match the routes registered in App.tsx. */
 export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Overview',

@@ -9,7 +9,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
-      {/* Brand */}
       <div className="flex h-16 items-center gap-2.5 px-5">
         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
           <Bus className="size-4.5" />
@@ -20,7 +19,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 pb-4">
         {NAV_SECTIONS.map(section => {
           const items = section.items.filter(

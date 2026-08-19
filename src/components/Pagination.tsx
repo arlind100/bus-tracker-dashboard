@@ -1,10 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-/**
- * Simple, accessible pager for client-side paginated tables.
- * Renders nothing when there is only one page.
- */
 export function Pagination({
   page,
   pageCount,

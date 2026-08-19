@@ -48,10 +48,6 @@ const schema = z
       .optional()
       .refine(v => v == null || v.trim() === '' || Number.isFinite(Number(v)), 'Must be a number'),
   })
-  // A vehicle needs at least one human-readable identifier. With both blank the
-  // fleet table shows "—" in every column and the passenger app falls back to
-  // labelling the bus with its raw document id — an unusable record that the
-  // form would otherwise create from a completely empty dialog.
   .refine(v => !!v.busNumber?.trim() || !!v.plate?.trim(), {
     message: 'Enter a bus number or a plate.',
     path: ['busNumber'],
@@ -105,9 +101,6 @@ export function BusFormDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      // The driver pairing is NOT written here — it goes through
-      // driversService.assignToBus so the drivers side stays consistent and the
-      // denormalized `buses.driver` name the mobile app renders stays correct.
       const payload: BusInput = {
         agencyId: values.agencyId === NONE ? undefined : values.agencyId,
         routeId: values.routeId === NONE ? undefined : values.routeId,
@@ -208,8 +201,6 @@ export function BusFormDialog({
             <FormField
               label="Driver"
               hint={
-                // Surfaces a legacy free-text name from a bus created before the
-                // drivers collection existed, so it is not silently dropped.
                 !bus?.driverId && bus?.driver ? `Currently: ${bus.driver}` : undefined
               }
             >

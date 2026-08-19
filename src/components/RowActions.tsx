@@ -6,7 +6,6 @@ import {
   DropdownMenuContent,
 } from '@/components/ui/dropdown-menu';
 
-/** Standard table row "⋯" menu. Pass DropdownMenuItem children. */
 export function RowActions({ children }: { children: ReactNode }) {
   return (
     <DropdownMenu>

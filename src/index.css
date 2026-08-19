@@ -1,14 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* ─── Design tokens ───────────────────────────────────────────────────────────
-   Anthropic/Claude-inspired: warm, calm neutrals with a deep-blue brand accent.
-   Raw CSS variables, exposed to Tailwind as semantic color utilities
-   (bg-background, text-foreground, border-border, …) via @theme inline. */
-
 :root {
-  --background:             #faf9f6;  /* warm ivory */
-  --foreground:             #1a1a18;  /* warm near-black */
+  --background:             #faf9f6;
+  --foreground:             #1a1a18;
 
   --card:                   #ffffff;
   --card-foreground:        #1a1a18;
@@ -16,7 +11,7 @@
   --popover:                #ffffff;
   --popover-foreground:     #1a1a18;
 
-  --primary:                #1e40af;  /* deep blue */
+  --primary:                #1e40af;
   --primary-foreground:     #f8fafc;
   --primary-hover:          #1b3a9e;
 
@@ -26,7 +21,7 @@
   --muted:                  #f1f0ea;
   --muted-foreground:       #6f6d64;
 
-  --accent:                 #eaf0fb;  /* faint blue tint */
+  --accent:                 #eaf0fb;
   --accent-foreground:      #1e40af;
 
   --destructive:            #b42318;
@@ -104,20 +99,10 @@
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
-  /* Leaflet numbers its own layers on a scale that dwarfs the app's: panes sit
-     at 400–700 and controls at 800–1000, against the z-50 Radix uses for dialog
-     overlays, dropdowns and selects. Those numbers only ever meant to order the
-     map's INTERNAL layers, but `.leaflet-container` opens no stacking context,
-     so they leaked into the root one and competed with the whole application —
-     and won. That is what put the checkpoint dialog behind the map.
-     Isolating the container keeps Leaflet's scale where it belongs: the map
-     resolves its own layers internally and competes outward as a single box, so
-     every portalled overlay lands above it without anyone tuning z-indexes. */
   .leaflet-container {
     isolation: isolate;
   }
 
-  /* Calm, thin scrollbars that fit the aesthetic. */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;

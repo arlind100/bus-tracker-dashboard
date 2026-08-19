@@ -40,7 +40,6 @@ export function NotificationKindBadge({ kind }: { kind: NotificationKind }) {
   return <Badge variant={NOTIFICATION_KIND_VARIANT[kind]}>{NOTIFICATION_KIND_LABEL[kind]}</Badge>;
 }
 
-/** Active/inactive pill for agencies, admins, schedules. */
 export function ActiveBadge({ active }: { active?: boolean }) {
   return active === false ? (
     <Badge variant="neutral">Inactive</Badge>

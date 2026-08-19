@@ -48,7 +48,6 @@ export function DriversPage() {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['drivers', user?.agencyId ?? 'all'],
-    // Scoped so an agency admin's list query stays within what the rules allow.
     queryFn: () => driversService.list(user?.agencyId),
   });
 

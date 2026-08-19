@@ -32,7 +32,6 @@ export function LoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  // Already signed in — bounce to the intended destination.
   if (status === 'authenticated' && user) {
     const from = (location.state as { from?: string } | null)?.from ?? '/';
     return <Navigate to={from} replace />;
@@ -55,7 +54,6 @@ export function LoginPage() {
 
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
-      {/* Brand panel */}
       <div className="relative hidden overflow-hidden bg-primary lg:flex lg:flex-col lg:justify-between">
         <div
           className="absolute inset-0 opacity-30"
@@ -84,7 +82,6 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* Form panel */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">

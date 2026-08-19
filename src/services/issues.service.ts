@@ -1,9 +1,3 @@
-// Issue reports data layer — triage passenger-submitted reports.
-//
-// Passengers CREATE these (rules allow anyone to create); admins read/update/
-// delete. "Open" = status ∈ {new, open, pending, reviewing}; a missing status is
-// treated as open. Reports optionally reference a route/bus/stop.
-
 import {
   collection,
   doc,
@@ -31,7 +25,6 @@ export function isOpen(report: Pick<IssueReport, 'status'>): boolean {
 
 export interface IssuesResult {
   reports: IssueReport[];
-  /** routeId → human-readable route name, for display alongside the raw id. */
   routeNames: Record<string, string>;
 }
 
@@ -43,7 +36,6 @@ export interface IssueUpdate {
 }
 
 export const issuesService = {
-  /** All reports, newest first, plus a routeId → name map. */
   async list(): Promise<IssuesResult> {
     const [issuesSnap, routeNames] = await Promise.all([
       getDocs(query(collection(db, COLLECTIONS.issueReports), orderBy('createdAt', 'desc'))),
@@ -52,7 +44,6 @@ export const issuesService = {
     return { reports: issuesSnap.docs.map(d => toDoc<IssueReport>(d)), routeNames };
   },
 
-  /** Update a report's triage fields (status / assignee / resolution note). */
   async update(id: string, patch: IssueUpdate): Promise<void> {
     await updateDoc(doc(db, COLLECTIONS.issueReports, id), {
       ...patch,

@@ -24,7 +24,6 @@ const TOOLTIP_STYLE = {
   color: 'var(--popover-foreground)',
 };
 
-/** Bar chart; set `layout="vertical"` for horizontal bars (long category labels). */
 export function BarChart({
   data,
   color = '#2563eb',

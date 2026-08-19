@@ -1,11 +1,3 @@
-// Agencies data layer — CRUD over the `agencies` collection, plus aggregated
-// views (counts, and a full per-agency detail) built with client-side joins
-// (the client SDK has no server joins — mirrors the mobile denormalization).
-//
-// Document shape mirrors the mobile seeder: an agency stores BOTH `id` and
-// `agencyId` (identical values), plus name/city/phone/email and epoch-ms
-// timestamps. `routes` and `buses` reference an agency by `agencyId`.
-
 import {
   collection,
   doc,
@@ -43,7 +35,6 @@ export interface AgencyWithCounts extends Agency {
   busCount: number;
 }
 
-/** Documents pointing at an agency — a delete is refused while any exist. */
 export interface AgencyReferences {
   routes: number;
   buses: number;
@@ -60,12 +51,10 @@ export interface AgencyDetail {
   admins: AdminRecord[];
   issues: IssueReport[];
   notifications: Notification[];
-  /** routeId → name, for labeling related buses/issues. */
   routeNames: Record<string, string>;
 }
 
 export const agenciesService = {
-  /** All agencies, sorted by name. */
   async list(): Promise<Agency[]> {
     const snap = await getDocs(collection(db, COLLECTIONS.agencies));
     return snap.docs
@@ -73,7 +62,6 @@ export const agenciesService = {
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
   },
 
-  /** All agencies with their route + bus counts (one pass over both collections). */
   async listWithCounts(): Promise<AgencyWithCounts[]> {
     const [agenciesSnap, routesSnap, busesSnap] = await Promise.all([
       getDocs(collection(db, COLLECTIONS.agencies)),
@@ -109,11 +97,6 @@ export const agenciesService = {
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as Agency) : null;
   },
 
-  /**
-   * Full detail for one agency: its routes, fleet, stops, admins, related issue
-   * reports, and best-effort matched notifications. Fetches whole collections and
-   * filters client-side (data volume is small — same approach as the mobile app).
-   */
   async getDetail(id: string): Promise<AgencyDetail | null> {
     const [agencySnap, routesSnap, busesSnap, stopsSnap, adminsSnap, issuesSnap, notifSnap] =
       await Promise.all([
@@ -149,8 +132,6 @@ export const agenciesService = {
     const issues = issuesSnap.docs
       .map(d => toDoc<IssueReport>(d))
       .filter(i => i.routeId && routeIds.has(i.routeId));
-    // Notifications aren't agency-scoped in the data model — best-effort match by
-    // any of the agency's route names appearing in the title/body.
     const notifications = notifSnap.docs
       .map(d => toDoc<Notification>(d))
       .filter(n => {
@@ -161,10 +142,6 @@ export const agenciesService = {
     return { agency, routes, buses, stops, admins, issues, notifications, routeNames };
   },
 
-  /**
-   * Creates an agency. Uses a deterministic `agency_<epoch>` id and stores both
-   * `id` and `agencyId` = that id, matching the seeded shape.
-   */
   async create(input: AgencyInput, actorUid?: string): Promise<string> {
     const now = Date.now();
     const id = `agency_${now}`;
@@ -191,7 +168,6 @@ export const agenciesService = {
     });
   },
 
-  /** Soft-disable / enable an agency (additive `active` flag). */
   async setActive(id: string, active: boolean, actorUid?: string): Promise<void> {
     await updateDoc(doc(db, COLLECTIONS.agencies, id), {
       active,
@@ -200,11 +176,6 @@ export const agenciesService = {
     });
   },
 
-  /**
-   * Counts everything that references this agency. The UI calls this before
-   * offering to delete, so an agency is never removed out from under live
-   * routes, buses, drivers or admins.
-   */
   async countReferences(id: string): Promise<AgencyReferences> {
     const [routesSnap, busesSnap, driversSnap, adminsSnap] = await Promise.all([
       getDocs(query(collection(db, COLLECTIONS.routes), where('agencyId', '==', id))),
@@ -219,11 +190,6 @@ export const agenciesService = {
     return { routes, buses, drivers, admins, total: routes + buses + drivers + admins };
   },
 
-  /**
-   * Deletes an agency ONLY when nothing references it. A referenced agency must
-   * be deactivated instead (setActive(false)) — deleting it would leave routes
-   * and buses pointing at an id that no longer resolves in either app.
-   */
   async remove(id: string): Promise<void> {
     const refs = await this.countReferences(id);
     if (refs.total > 0) {

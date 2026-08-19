@@ -25,10 +25,8 @@ export interface MapPolyline {
   color: string;
 }
 
-// Skopje — the seeded data's city. A sensible default center.
 const DEFAULT_CENTER: LatLngExpression = [41.9981, 21.4254];
 
-/** Pans/zooms to fit the given bounds whenever they change. */
 function FitBounds({ bounds }: { bounds: LatLngBoundsExpression | null }) {
   const map = useMap();
   useEffect(() => {

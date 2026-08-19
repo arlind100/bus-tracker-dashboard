@@ -1,9 +1,3 @@
-// Routes data layer — CRUD over `routes`, plus the atomic route+stops batch.
-//
-// Document shape mirrors the seeded/admin-created routes exactly so the mobile
-// passenger + admin screens read dashboard-created routes without changes.
-// Status enums are fixed: status ∈ {On time, Delayed, Offline}, st ∈ {ok,warn,off}.
-
 import {
   collection,
   doc,
@@ -19,7 +13,6 @@ import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
 import type { PathPoint, Route, RouteStatus, RouteSt } from '@/types';
 
-/** Keeps `status` and its UI shorthand `st` consistent. */
 const ST_BY_STATUS: Record<RouteStatus, RouteSt> = {
   'On time': 'ok',
   Delayed: 'warn',
@@ -49,7 +42,6 @@ export interface StopSeed {
 }
 
 export const routesService = {
-  /** All routes, sorted by id for a stable list. */
   async list(): Promise<Route[]> {
     const snap = await getDocs(collection(db, COLLECTIONS.routes));
     return snap.docs
@@ -91,11 +83,6 @@ export const routesService = {
     return id;
   },
 
-  /**
-   * Creates a route AND its stop documents in one atomic writeBatch — mirroring
-   * the mobile routeCreator.createRouteWithStops so a partial write can't leave
-   * a route with no stops. Stops are linked by routeId and shaped like seeds.
-   */
   async createWithStops(
     input: RouteInput & { stopSeeds: StopSeed[] },
     actorUid?: string,
@@ -136,15 +123,11 @@ export const routesService = {
       batch.set(doc(db, COLLECTIONS.stops, stopId), {
         id: stopId,
         stopId,
-        // Inherited from the route so the rules can scope stop writes by agency
-        // without an extra document read on every write.
         agencyId: input.agencyId?.trim() ?? '',
         routeId,
         routes: [routeId],
         name: stop.name.trim(),
         order,
-        // The stop's city, not the route's origin STOP name — `from` holds a
-        // stop name ("Centar"), so using it here mislabels every stop's city.
         city: input.city?.trim() ?? '',
         lat: stop.lat,
         lng: stop.lng,
@@ -179,7 +162,6 @@ export const routesService = {
     });
   },
 
-  /** What a route delete would take with it — shown in the confirm dialog. */
   async countDependents(id: string): Promise<{ stops: number; schedules: number; buses: number }> {
     const [stopsSnap, schedulesSnap, busesSnap] = await Promise.all([
       getDocs(query(collection(db, COLLECTIONS.stops), where('routeId', '==', id))),
@@ -189,18 +171,6 @@ export const routesService = {
     return { stops: stopsSnap.size, schedules: schedulesSnap.size, buses: busesSnap.size };
   },
 
-  /**
-   * Deletes a route and everything that would be orphaned by it, in one atomic
-   * batch:
-   *   - its stop documents (stops.routeId)
-   *   - its timetable rows (schedules.routeId) — otherwise the mobile route
-   *     screen would query schedules for a route that no longer exists
-   *   - the route assignment on any bus (routeId + the mirrored `route` field),
-   *     so no bus is left pointing at a dead id. The buses themselves are kept:
-   *     a vehicle outlives a route and is simply unassigned.
-   *   - the same reference on those buses' checkpoints, which otherwise keep
-   *     reporting a route id that no longer resolves in either app.
-   */
   async remove(id: string, actorUid?: string): Promise<void> {
     const [stopsSnap, schedulesSnap, busesSnap, locationsSnap] = await Promise.all([
       getDocs(query(collection(db, COLLECTIONS.stops), where('routeId', '==', id))),

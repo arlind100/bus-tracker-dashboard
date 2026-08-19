@@ -59,8 +59,6 @@ export function RoutesPage() {
   const [editing, setEditing] = useState<Route | null>(null);
   const [deleting, setDeleting] = useState<Route | null>(null);
 
-  // What this delete would actually take with it, counted live so the operator
-  // confirms against real numbers rather than a generic warning.
   const { data: dependents, isLoading: countingDependents } = useQuery({
     queryKey: ['route-dependents', deleting?.id],
     queryFn: () => routesService.countDependents(deleting!.id),

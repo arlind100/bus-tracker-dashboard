@@ -1,10 +1,3 @@
-// Buses data layer — CRUD over `buses`, with best-effort route/agency name joins.
-//
-// The mobile app writes BOTH `route` and `routeId` with the assigned route id;
-// this service keeps them in sync. Status enum is fixed:
-// status ∈ {Active, Offline, Maintenance}. Drivers are a free-text field
-// (there is no drivers collection). agencyId links a bus to its operator.
-
 import {
   collection,
   doc,
@@ -31,22 +24,18 @@ export interface BusInput {
   routeId?: string;
   plate?: string;
   busNumber?: string;
-  /** Driver NAME — denormalized for the mobile app, which renders this string. */
   driver?: string;
-  /** Reference into `drivers`. Written alongside `driver`, never instead of it. */
   driverId?: string;
   status?: BusStatus;
   capacity?: number;
 }
 
 export const busesService = {
-  /** All buses (sorted by id) plus route/agency name maps for display. */
   async list(): Promise<BusesResult> {
     const busSnap = await getDocs(collection(db, COLLECTIONS.buses));
     const buses = busSnap.docs
       .map(d => toDoc<Bus>(d))
       .sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''));
-    // Name joins are best-effort display sugar — a failure falls back to raw ids.
     const [routeNames, agencyNames] = await Promise.all([
       fetchNameMap(COLLECTIONS.routes),
       fetchNameMap(COLLECTIONS.agencies),
@@ -67,7 +56,7 @@ export const busesService = {
       id,
       agencyId: input.agencyId?.trim() ?? '',
       routeId,
-      route: routeId, // mobile keeps both in sync
+      route: routeId,
       plate: input.plate?.trim() ?? '',
       busNumber: input.busNumber?.trim() ?? '',
       driver: input.driver?.trim() ?? '',
@@ -83,7 +72,6 @@ export const busesService = {
 
   async update(id: string, patch: Partial<BusInput>, actorUid?: string): Promise<void> {
     const data: Record<string, unknown> = { ...patch, updatedAt: Date.now() };
-    // Keep the legacy `route` field mirrored to routeId.
     if (patch.routeId !== undefined) data.route = patch.routeId;
     if (actorUid) data.updatedBy = actorUid;
     await updateDoc(doc(db, COLLECTIONS.buses, id), data);
@@ -97,16 +85,6 @@ export const busesService = {
     });
   },
 
-  /**
-   * Deletes the bus together with its last-known checkpoint, then frees any
-   * driver assigned to it.
-   *
-   * The checkpoint MUST go with the bus. The passenger map builds its markers
-   * from `busLocations`, so an orphaned checkpoint keeps drawing a live vehicle
-   * that no longer exists in the fleet — labelled with a raw document id,
-   * because there is no bus left to name it. Both deletes go in one batch so a
-   * failure can never leave exactly that state behind.
-   */
   async remove(id: string): Promise<void> {
     const batch = writeBatch(db);
     batch.delete(doc(db, COLLECTIONS.buses, id));

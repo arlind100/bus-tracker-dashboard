@@ -5,10 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
-/**
- * Controlled confirmation dialog for destructive/irreversible actions.
- * Built on Radix AlertDialog (focus-trapped, escape-to-close, accessible).
- */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -62,7 +58,6 @@ export function ConfirmDialog({
               variant={destructive ? 'destructive' : 'primary'}
               disabled={loading}
               onClick={e => {
-                // Keep the dialog open while the async action runs; caller closes it.
                 e.preventDefault();
                 onConfirm();
               }}

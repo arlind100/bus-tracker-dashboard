@@ -1,9 +1,3 @@
-// Notifications data layer — broadcast service alerts to the passenger app.
-//
-// The passenger Notifications screen sorts on a numeric `createdAt` and renders
-// by `kind` (delay/arrive/update) with a matching `color`. This service sets
-// those automatically so dashboard-created alerts render correctly on mobile.
-
 import {
   collection,
   doc,
@@ -19,7 +13,6 @@ import { COLLECTIONS } from '@/firebase/collections';
 import { toDoc } from '@/lib/firestore';
 import type { Notification, NotificationKind } from '@/types';
 
-// kind → color the passenger screen already understands (matches admin.service).
 const NOTIFICATION_COLORS: Record<NotificationKind, string> = {
   delay: '#F59E0B',
   arrive: '#16A34A',
@@ -30,16 +23,10 @@ export interface NotificationInput {
   kind: NotificationKind;
   title: string;
   body: string;
-  /**
-   * Agency that owns this alert. A super admin may broadcast platform-wide by
-   * leaving it empty; an agency admin must supply their own agency, because the
-   * rules only let them write documents their agency owns.
-   */
   agencyId?: string;
 }
 
 export const notificationsService = {
-  /** All notifications, newest first. */
   async list(): Promise<Notification[]> {
     const snap = await getDocs(
       query(collection(db, COLLECTIONS.notifications), orderBy('createdAt', 'desc')),
@@ -47,7 +34,6 @@ export const notificationsService = {
     return snap.docs.map(d => toDoc<Notification>(d));
   },
 
-  /** Broadcasts a new alert with auto color/time/createdAt. */
   async create(input: NotificationInput, actorUid?: string): Promise<string> {
     const ref = await addDoc(collection(db, COLLECTIONS.notifications), {
       agencyId: input.agencyId?.trim() ?? '',

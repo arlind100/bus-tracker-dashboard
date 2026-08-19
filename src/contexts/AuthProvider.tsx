@@ -5,12 +5,6 @@ import { authService } from '@/services/auth.service';
 import { AuthContext, type AuthStatus } from '@/contexts/auth-context';
 import type { AppUser } from '@/types';
 
-/**
- * Owns the single onAuthStateChanged subscription for the whole app. On every
- * auth-state change it re-verifies admin access against admins/{uid} (mirroring
- * the mobile (admin)/_layout guard): a signed-in user who is NOT a valid admin
- * is signed back out and treated as unauthenticated.
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
@@ -22,9 +16,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus('unauthenticated');
         return;
       }
-      // resolveUser throws if admins/{uid} could not be READ (as opposed to
-      // answering "not an admin"). Both outcomes revoke the session — the guard
-      // fails closed — but only the first is an error worth logging.
       let appUser: AppUser | null = null;
       try {
         appUser = await authService.resolveUser(fbUser);
@@ -33,7 +24,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!appUser) {
-        // Signed-in but not a verified admin — revoke the session.
         await signOut(auth);
         setUser(null);
         setStatus('unauthenticated');
@@ -46,8 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    // resolveUser + state updates are driven by onAuthStateChanged above; we
-    // return the resolved user here so the caller can react immediately.
     return authService.login(email, password);
   }, []);
 

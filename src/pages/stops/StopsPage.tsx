@@ -86,8 +86,6 @@ export function StopsPage() {
     onError: err => toast.error(err instanceof Error ? err.message : 'Delete failed'),
   });
 
-  // Reordering rewrites BOTH the stop documents' `order` and the route's
-  // ordered `stops[]` names, atomically — the passenger app reads the latter.
   const reorder = useMutation({
     mutationFn: ({ routeId, ids }: { routeId: string; ids: string[] }) =>
       stopsService.reorderForRoute(routeId, ids, user?.uid),
@@ -100,7 +98,6 @@ export function StopsPage() {
     onError: err => toast.error(err instanceof Error ? err.message : 'Reorder failed'),
   });
 
-  /** Moves a stop one position earlier (-1) or later (+1) along its route. */
   const move = (stop: Stop, delta: number) => {
     if (!stop.routeId) return;
     const siblings = (data ?? [])

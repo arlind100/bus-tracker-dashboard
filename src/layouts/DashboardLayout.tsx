@@ -11,14 +11,12 @@ export function DashboardLayout() {
 
   return (
     <div className="flex min-h-svh bg-background">
-      {/* Desktop sidebar */}
       <div className="hidden lg:block">
         <div className="sticky top-0 h-svh">
           <Sidebar />
         </div>
       </div>
 
-      {/* Mobile sidebar drawer */}
       <div
         className={cn(
           'fixed inset-0 z-40 lg:hidden',
@@ -51,7 +49,6 @@ export function DashboardLayout() {
         </div>
       </div>
 
-      {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onOpenSidebar={() => setMobileOpen(true)} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8">

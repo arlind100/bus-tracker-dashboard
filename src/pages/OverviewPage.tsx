@@ -75,8 +75,6 @@ export function OverviewPage() {
         title={`Welcome back, ${firstName}`}
         description="A live overview of your transit platform."
         actions={
-          // Reaching this render means the aggregate read succeeded — a failed
-          // or timed-out read throws and is handled by the isError branch above.
           <Badge variant="success">
             <CircleCheck className="size-3.5" />
             Connected to Firestore
@@ -84,7 +82,6 @@ export function OverviewPage() {
         }
       />
 
-      {/* KPI grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
         <StatCard label="Agencies" value={data.totalAgencies} icon={Building2} />
         <StatCard label="Routes" value={data.totalRoutes} sublabel={`${data.activeRoutes} active`} icon={RouteIcon} />
@@ -103,7 +100,6 @@ export function OverviewPage() {
         <StatCard label="Notifications" value={data.totalNotifications} icon={Bell} />
       </div>
 
-      {/* Charts */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader>
@@ -172,7 +168,6 @@ export function OverviewPage() {
         </Card>
       </div>
 
-      {/* Recent lists */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-center justify-between">

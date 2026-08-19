@@ -76,8 +76,6 @@ export function NotificationFormDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      // An agency admin may only write documents their agency owns, so the
-      // alert is stamped with it. A super admin broadcasts platform-wide.
       const payload: NotificationInput = { ...values, agencyId: user?.agencyId ?? '' };
       if (isEdit && notification) {
         await notificationsService.update(notification.id, payload, user?.uid);
