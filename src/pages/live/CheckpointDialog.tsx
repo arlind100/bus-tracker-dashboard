@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -121,6 +122,10 @@ function CheckpointForm({
   const [progress, setProgress] = useState(
     Math.round((location?.progress ?? bus.progress ?? 0) * 100),
   );
+  // Defaults ON for a bus the automation currently owns: someone opening this
+  // dialog is correcting a position, and a correction the next tick erases a
+  // minute later is not a correction. Turning it off hands the bus back.
+  const [held, setHeld] = useState(bus.manualOverride ?? true);
 
   const stopOptions = route?.stops ?? [];
 
@@ -158,6 +163,11 @@ function CheckpointForm({
         },
         user?.uid,
       );
+      // After the checkpoint, so a failed write never leaves a bus held with no
+      // position to show for it.
+      if (held !== (bus.manualOverride ?? false)) {
+        await liveService.setManualOverride(bus.id, held, user?.uid);
+      }
       await audit('checkpoint_update', `Updated live checkpoint for bus ${bus.busNumber || bus.id}`, bus.id);
     },
     onSuccess: () => {
@@ -238,6 +248,20 @@ function CheckpointForm({
               </span>
             </div>
           )}
+
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-border px-3 py-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="manual-hold" className="text-sm font-medium text-foreground">
+                Hold under manual control
+              </label>
+              <span className="text-xs text-muted-foreground">
+                {held
+                  ? 'The automatic simulator will leave this bus alone — your checkpoint stands until you hand it back.'
+                  : 'The automatic simulator owns this bus and will move it on its next run, overwriting the position above.'}
+              </span>
+            </div>
+            <Switch id="manual-hold" checked={held} onCheckedChange={setHeld} />
+          </div>
 
           <div className="flex items-start gap-2 rounded-lg bg-accent/60 px-3 py-2.5 text-xs text-accent-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" />

@@ -17,6 +17,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -89,6 +90,22 @@ export const liveService = {
     if (update.lng !== undefined) payload.lng = update.lng;
     if (actorUid) payload.updatedBy = actorUid;
     await setDoc(doc(db, COLLECTIONS.busLocations, busId), payload, { merge: true });
+  },
+
+  /**
+   * Takes a vehicle off automatic control, or hands it back.
+   *
+   * The scheduled fleet simulator skips a bus with `manualOverride` set — it
+   * neither moves it nor clears its checkpoint. Without this, a hand-entered
+   * checkpoint survives only until the next tick (a minute at most), which makes
+   * manual correction pointless precisely when an operator needs it.
+   */
+  async setManualOverride(busId: string, held: boolean, actorUid?: string): Promise<void> {
+    await updateDoc(doc(db, COLLECTIONS.buses, busId), {
+      manualOverride: held,
+      updatedAt: Date.now(),
+      ...(actorUid ? { updatedBy: actorUid } : {}),
+    });
   },
 
   /**

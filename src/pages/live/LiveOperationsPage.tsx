@@ -10,6 +10,7 @@ import { ErrorState, EmptyState } from '@/components/states';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { BusStatusBadge } from '@/components/StatusBadge';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { LiveMap, type MapBus, type MapPolyline } from '@/pages/live/LiveMap';
 import { CheckpointDialog } from '@/pages/live/CheckpointDialog';
@@ -228,6 +229,13 @@ export function LiveOperationsPage() {
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-foreground">{selectedBus.busNumber || selectedBus.id}</p>
                     <BusStatusBadge status={(effectiveStatus(selectedBus) as BusStatus)} />
+                    {/* A held bus never moves. Without this it looks identical to a
+                        running one, and the stillness reads as a broken feed. */}
+                    {selectedBus.manualOverride && (
+                      <Badge variant="neutral" title="Automatic updates are paused for this bus">
+                        Manual hold
+                      </Badge>
+                    )}
                   </div>
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     {selectedRoute?.name ?? 'No route'}

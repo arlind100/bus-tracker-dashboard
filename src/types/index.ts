@@ -215,6 +215,14 @@ export interface Bus {
   currentStop?: string;
   nextStop?: string;
   progress?: number;
+  /**
+   * Takes this vehicle off automatic control. The scheduled fleet simulator
+   * (functions/src/fleet.ts) skips a bus with this set — it neither moves it nor
+   * clears its checkpoint — so a checkpoint entered by hand on the Live
+   * Operations page stands until an operator hands the bus back. Absent or false
+   * means the automation owns the vehicle.
+   */
+  manualOverride?: boolean;
   createdAt?: number;
   updatedAt?: number;
   createdBy?: string;

@@ -104,6 +104,19 @@
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
+  /* Leaflet numbers its own layers on a scale that dwarfs the app's: panes sit
+     at 400–700 and controls at 800–1000, against the z-50 Radix uses for dialog
+     overlays, dropdowns and selects. Those numbers only ever meant to order the
+     map's INTERNAL layers, but `.leaflet-container` opens no stacking context,
+     so they leaked into the root one and competed with the whole application —
+     and won. That is what put the checkpoint dialog behind the map.
+     Isolating the container keeps Leaflet's scale where it belongs: the map
+     resolves its own layers internally and competes outward as a single box, so
+     every portalled overlay lands above it without anyone tuning z-indexes. */
+  .leaflet-container {
+    isolation: isolate;
+  }
+
   /* Calm, thin scrollbars that fit the aesthetic. */
   * {
     scrollbar-width: thin;
