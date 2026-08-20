@@ -244,7 +244,9 @@ export interface DashboardStats {
   issuesByCategory: Record<IssueKind, number>;
   routesByAgency: Record<string, number>;
   busesByAgency: Record<string, number>;
+  busesByRoute: Record<string, number>;
   agencyNames: Record<string, string>;
+  routeNames: Record<string, string>;
   recentIssueReports: IssueReport[];
   recentAdminUpdates: AdminUpdate[];
   recentNotifications: Notification[];

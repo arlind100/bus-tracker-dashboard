@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Eye, Building2, Power, PowerOff } from 'lucide-react';
 import { agenciesService, type AgencyWithCounts } from '@/services/agencies.service';
@@ -33,9 +34,10 @@ export function AgenciesPage() {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
   const { user } = useAuth();
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['agencies', 'with-counts'],
-    queryFn: () => agenciesService.listWithCounts(),
+    queryKey: ['agencies', 'with-counts', scopeKey],
+    queryFn: () => agenciesService.listWithCounts(scopeAgencyId),
   });
 
   const [formOpen, setFormOpen] = useState(false);

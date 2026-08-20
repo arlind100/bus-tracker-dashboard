@@ -11,6 +11,7 @@ import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
 import { toDoc, fetchNameMap } from '@/lib/firestore';
 import { driversService } from '@/services/drivers.service';
+import { scopeOwned } from '@/lib/scope';
 import type { Bus, BusStatus } from '@/types';
 
 export interface BusesResult {
@@ -31,11 +32,12 @@ export interface BusInput {
 }
 
 export const busesService = {
-  async list(): Promise<BusesResult> {
+  async list(scopeAgencyId?: string): Promise<BusesResult> {
     const busSnap = await getDocs(collection(db, COLLECTIONS.buses));
-    const buses = busSnap.docs
-      .map(d => toDoc<Bus>(d))
-      .sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''));
+    const buses = scopeOwned(
+      busSnap.docs.map(d => toDoc<Bus>(d)),
+      scopeAgencyId,
+    ).sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''));
     const [routeNames, agencyNames] = await Promise.all([
       fetchNameMap(COLLECTIONS.routes),
       fetchNameMap(COLLECTIONS.agencies),

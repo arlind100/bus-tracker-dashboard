@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Bus as BusIcon, Circle } from 'lucide-react';
 import { busesService } from '@/services/buses.service';
@@ -45,9 +46,10 @@ export function BusesPage() {
   const audit = useAuditLog();
   const { user } = useAuth();
 
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['buses'],
-    queryFn: () => busesService.list(),
+    queryKey: ['buses', scopeKey],
+    queryFn: () => busesService.list(scopeAgencyId),
   });
 
   const buses = data?.buses ?? [];
@@ -103,7 +105,9 @@ export function BusesPage() {
     <div>
       <PageHeader
         title="Buses"
-        description="Manage the vehicle fleet across all agencies."
+        description={
+          scopeAgencyId ? 'Manage your agency’s vehicle fleet.' : 'Manage the vehicle fleet across all agencies.'
+        }
         actions={
           <Button onClick={openCreate}>
             <Plus className="size-4" />

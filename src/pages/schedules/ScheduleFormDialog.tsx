@@ -3,6 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { schedulesService, type ScheduleInput } from '@/services/schedules.service';
 import { routesService } from '@/services/routes.service';
@@ -58,7 +59,8 @@ export function ScheduleFormDialog({
   const { user } = useAuth();
   const isEdit = !!schedule;
 
-  const { data: routes } = useQuery({ queryKey: ['routes'], queryFn: () => routesService.list(), enabled: open });
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
+  const { data: routes } = useQuery({ queryKey: ['routes', scopeKey], queryFn: () => routesService.list(scopeAgencyId), enabled: open });
 
   const {
     register,

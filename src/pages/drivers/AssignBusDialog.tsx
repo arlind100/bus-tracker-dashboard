@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { driversService } from '@/services/drivers.service';
 import { busesService } from '@/services/buses.service';
@@ -52,7 +53,8 @@ function AssignBusForm({ driver, onDone }: { driver: Driver; onDone: () => void 
   const { user } = useAuth();
   const [busId, setBusId] = useState<string>(driver.assignedBusId || UNASSIGNED);
 
-  const { data } = useQuery({ queryKey: ['buses'], queryFn: () => busesService.list() });
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
+  const { data } = useQuery({ queryKey: ['buses', scopeKey], queryFn: () => busesService.list(scopeAgencyId) });
   const buses = data?.buses ?? [];
 
   const mutation = useMutation({

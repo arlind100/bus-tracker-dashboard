@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
+import { scopeOwned } from '@/lib/scope';
 import { toDoc } from '@/lib/firestore';
 import type { Bus, BusLocation, BusLocationUpdate, Route } from '@/types';
 
@@ -19,11 +20,12 @@ export interface LiveData {
 }
 
 export const liveService = {
-  async getLiveData(): Promise<LiveData> {
+  async getLiveData(scopeAgencyId?: string): Promise<LiveData> {
     const busSnap = await getDocs(collection(db, COLLECTIONS.buses));
-    const buses = busSnap.docs
-      .map(d => toDoc<Bus>(d))
-      .sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''));
+    const buses = scopeOwned(
+      busSnap.docs.map(d => toDoc<Bus>(d)),
+      scopeAgencyId,
+    ).sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''));
 
     const [routesById, locationsByBusId] = await Promise.all([
       getDocs(collection(db, COLLECTIONS.routes))

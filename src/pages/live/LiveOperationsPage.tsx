@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { Radio, Crosshair, Navigation, MapPinOff, SlidersHorizontal } from 'lucide-react';
 import { latLngBounds, type LatLngBoundsExpression } from 'leaflet';
 import { liveService } from '@/services/live.service';
@@ -24,9 +25,10 @@ const STATUS_COLOR: Record<string, string> = {
 const FILTERS: (BusStatus | 'All')[] = ['All', 'Active', 'Offline', 'Maintenance'];
 
 export function LiveOperationsPage() {
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['live-data'],
-    queryFn: () => liveService.getLiveData(),
+    queryKey: ['live-data', scopeKey],
+    queryFn: () => liveService.getLiveData(scopeAgencyId),
   });
 
   const [liveLocations, setLiveLocations] = useState<Record<string, BusLocation> | null>(null);

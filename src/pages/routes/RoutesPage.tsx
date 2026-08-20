@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Route as RouteIcon, Circle } from 'lucide-react';
 import { routesService } from '@/services/routes.service';
@@ -40,13 +41,14 @@ export function RoutesPage() {
   const audit = useAuditLog();
   const { user } = useAuth();
 
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['routes'],
-    queryFn: () => routesService.list(),
+    queryKey: ['routes', scopeKey],
+    queryFn: () => routesService.list(scopeAgencyId),
   });
   const { data: agencies } = useQuery({
-    queryKey: ['agencies'],
-    queryFn: () => agenciesService.list(),
+    queryKey: ['agencies', scopeKey],
+    queryFn: () => agenciesService.list(scopeAgencyId),
   });
 
   const agencyNames = useMemo(() => {
@@ -111,7 +113,9 @@ export function RoutesPage() {
     <div>
       <PageHeader
         title="Routes"
-        description="Create and manage routes across all agencies."
+        description={
+          scopeAgencyId ? 'Create and manage your agency’s routes.' : 'Create and manage routes across all agencies.'
+        }
         actions={
           <Button onClick={openCreate}>
             <Plus className="size-4" />

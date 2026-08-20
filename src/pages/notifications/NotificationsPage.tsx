@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Bell } from 'lucide-react';
 import { notificationsService } from '@/services/notifications.service';
@@ -33,9 +34,10 @@ export function NotificationsPage() {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
 
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => notificationsService.list(),
+    queryKey: ['notifications', scopeKey],
+    queryFn: () => notificationsService.list(scopeAgencyId),
   });
 
   const [formOpen, setFormOpen] = useState(false);

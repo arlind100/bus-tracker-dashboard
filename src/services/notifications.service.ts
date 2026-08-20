@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
+import { scopeOwnedOrGlobal } from '@/lib/scope';
 import { toDoc } from '@/lib/firestore';
 import type { Notification, NotificationKind } from '@/types';
 
@@ -27,11 +28,13 @@ export interface NotificationInput {
 }
 
 export const notificationsService = {
-  async list(): Promise<Notification[]> {
+  async list(scopeAgencyId?: string): Promise<Notification[]> {
     const snap = await getDocs(
       query(collection(db, COLLECTIONS.notifications), orderBy('createdAt', 'desc')),
     );
-    return snap.docs.map(d => toDoc<Notification>(d));
+    // Broadcasts carry no agencyId and are addressed to everyone, so an agency
+    // admin sees those alongside their own.
+    return scopeOwnedOrGlobal(snap.docs.map(d => toDoc<Notification>(d)), scopeAgencyId);
   },
 
   async create(input: NotificationInput, actorUid?: string): Promise<string> {

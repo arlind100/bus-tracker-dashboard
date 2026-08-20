@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, MapPin, ArrowUp, ArrowDown } from 'lucide-react';
 import { stopsService } from '@/services/stops.service';
@@ -43,13 +44,14 @@ export function StopsPage() {
   const audit = useAuditLog();
   const { user } = useAuth();
 
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['stops'],
-    queryFn: () => stopsService.list(),
+    queryKey: ['stops', scopeKey],
+    queryFn: () => stopsService.list(scopeAgencyId),
   });
   const { data: routes } = useQuery({
-    queryKey: ['routes'],
-    queryFn: () => routesService.list(),
+    queryKey: ['routes', scopeKey],
+    queryFn: () => routesService.list(scopeAgencyId),
   });
 
   const routeNames = useMemo(() => {

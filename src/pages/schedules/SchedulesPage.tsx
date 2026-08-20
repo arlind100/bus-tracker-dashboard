@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, CalendarClock, Clock } from 'lucide-react';
 import { schedulesService } from '@/services/schedules.service';
@@ -41,12 +42,13 @@ export function SchedulesPage() {
   const queryClient = useQueryClient();
   const audit = useAuditLog();
 
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['schedules'],
-    queryFn: () => schedulesService.list(),
+    queryKey: ['schedules', scopeKey],
+    queryFn: () => schedulesService.list(scopeAgencyId),
     retry: false,
   });
-  const { data: routes } = useQuery({ queryKey: ['routes'], queryFn: () => routesService.list() });
+  const { data: routes } = useQuery({ queryKey: ['routes', scopeKey], queryFn: () => routesService.list(scopeAgencyId) });
 
   const routeNames = useMemo(() => {
     const map: Record<string, string> = {};

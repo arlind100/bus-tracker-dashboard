@@ -23,15 +23,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/ui/spinner';
 import { ErrorState, EmptyState } from '@/components/states';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { formatRelative } from '@/lib/utils';
 import { ISSUE_KIND_LABEL, STATUS_CHART_COLOR, CHART_COLORS } from '@/lib/domain';
 import type { IssueKind } from '@/types';
 
 export function OverviewPage() {
   const { user } = useAuth();
+  const { scopeAgencyId, scopeKey, isScoped } = useAgencyFilter();
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: () => dashboardService.getStats(),
+    queryKey: ['dashboard-stats', scopeKey],
+    queryFn: () => dashboardService.getStats(scopeAgencyId, user?.uid),
   });
 
   const firstName = (user?.displayName || user?.email || 'there').split(/[\s@]/)[0];
@@ -60,6 +62,15 @@ export function OverviewPage() {
   }));
 
   const agencyName = (id: string) => (id === 'unassigned' ? 'Unassigned' : data.agencyNames[id] ?? id);
+  const scopedAgencyName = scopeAgencyId ? agencyName(scopeAgencyId) : '';
+  const busesByRouteData = Object.entries(data.busesByRoute)
+    .map(([id, value], i) => ({
+      name: id === 'unassigned' ? 'No route' : data.routeNames[id] ?? id,
+      value,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
   const busesByAgencyData = Object.entries(data.busesByAgency)
     .map(([id, value]) => ({ name: agencyName(id), value }))
     .sort((a, b) => b.value - a.value)
@@ -73,7 +84,11 @@ export function OverviewPage() {
     <div>
       <PageHeader
         title={`Welcome back, ${firstName}`}
-        description="A live overview of your transit platform."
+        description={
+          isScoped
+            ? `A live overview of ${scopedAgencyName}.`
+            : 'A live overview of your transit platform.'
+        }
         actions={
           <Badge variant="success">
             <CircleCheck className="size-3.5" />
@@ -83,7 +98,8 @@ export function OverviewPage() {
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-        <StatCard label="Agencies" value={data.totalAgencies} icon={Building2} />
+        {/* "Agencies: 1" tells a scoped admin nothing they don't know. */}
+        {!isScoped && <StatCard label="Agencies" value={data.totalAgencies} icon={Building2} />}
         <StatCard label="Routes" value={data.totalRoutes} sublabel={`${data.activeRoutes} active`} icon={RouteIcon} />
         <StatCard label="Buses" value={data.totalBuses} icon={Bus} />
         <StatCard label="Active buses" value={data.activeBuses} icon={CircleCheck} tone="success" />
@@ -119,25 +135,29 @@ export function OverviewPage() {
           </CardContent>
         </Card>
 
+        {/* A one-bar "by agency" chart is noise, so a scoped admin gets the
+            comparison that is actually theirs to act on: buses per route. */}
         <Card>
           <CardHeader>
-            <CardTitle>Fleet size by agency</CardTitle>
+            <CardTitle>{isScoped ? 'Fleet size by route' : 'Fleet size by agency'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <BarChart data={busesByAgencyData} />
+            <BarChart data={isScoped ? busesByRouteData : busesByAgencyData} />
           </CardContent>
         </Card>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Routes by agency</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BarChart data={routesByAgencyData} layout="vertical" />
-          </CardContent>
-        </Card>
+        {!isScoped && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Routes by agency</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BarChart data={routesByAgencyData} layout="vertical" />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

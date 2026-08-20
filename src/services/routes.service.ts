@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
+import { scopeOwned } from '@/lib/scope';
 import type { PathPoint, Route, RouteStatus, RouteSt } from '@/types';
 
 const ST_BY_STATUS: Record<RouteStatus, RouteSt> = {
@@ -42,10 +43,9 @@ export interface StopSeed {
 }
 
 export const routesService = {
-  async list(): Promise<Route[]> {
+  async list(scopeAgencyId?: string): Promise<Route[]> {
     const snap = await getDocs(collection(db, COLLECTIONS.routes));
-    return snap.docs
-      .map(d => d.data() as Route)
+    return scopeOwned(snap.docs.map(d => d.data() as Route), scopeAgencyId)
       .sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''));
   },
 

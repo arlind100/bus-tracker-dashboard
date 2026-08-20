@@ -55,14 +55,17 @@ export interface AgencyDetail {
 }
 
 export const agenciesService = {
-  async list(): Promise<Agency[]> {
+  // An agency is identified by its own document id, so the scope is matched
+  // against `id` here rather than against an `agencyId` field.
+  async list(scopeAgencyId?: string): Promise<Agency[]> {
     const snap = await getDocs(collection(db, COLLECTIONS.agencies));
     return snap.docs
       .map(d => toDoc<Agency>(d))
+      .filter(a => !scopeAgencyId || a.id === scopeAgencyId)
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
   },
 
-  async listWithCounts(): Promise<AgencyWithCounts[]> {
+  async listWithCounts(scopeAgencyId?: string): Promise<AgencyWithCounts[]> {
     const [agenciesSnap, routesSnap, busesSnap] = await Promise.all([
       getDocs(collection(db, COLLECTIONS.agencies)),
       getDocs(collection(db, COLLECTIONS.routes)),
@@ -89,6 +92,7 @@ export const agenciesService = {
           busCount: busCounts[agency.id] ?? 0,
         };
       })
+      .filter(a => !scopeAgencyId || a.id === scopeAgencyId)
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
   },
 

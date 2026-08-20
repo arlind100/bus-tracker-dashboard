@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { COLLECTIONS } from '@/firebase/collections';
+import { scopeOwned } from '@/lib/scope';
 import { toDoc } from '@/lib/firestore';
 import type { Stop } from '@/types';
 
@@ -22,10 +23,9 @@ export interface StopInput {
 }
 
 export const stopsService = {
-  async list(): Promise<Stop[]> {
+  async list(scopeAgencyId?: string): Promise<Stop[]> {
     const snap = await getDocs(collection(db, COLLECTIONS.stops));
-    return snap.docs
-      .map(d => toDoc<Stop>(d))
+    return scopeOwned(snap.docs.map(d => toDoc<Stop>(d)), scopeAgencyId)
       .sort(
         (a, b) =>
           (a.routeId ?? '').localeCompare(b.routeId ?? '') ||

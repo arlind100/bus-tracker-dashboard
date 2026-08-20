@@ -3,6 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAgencyFilter } from '@/hooks/useAgencyFilter';
 import { toast } from 'sonner';
 import { busesService, type BusInput } from '@/services/buses.service';
 import { useAgencyScope } from '@/hooks/useAgencyScope';
@@ -69,8 +70,9 @@ export function BusFormDialog({
   const { user } = useAuth();
   const isEdit = !!bus;
 
+  const { scopeAgencyId, scopeKey } = useAgencyFilter();
   const { options: agencies, locked: agencyLocked, defaultAgencyId } = useAgencyScope(open);
-  const { data: routes } = useQuery({ queryKey: ['routes'], queryFn: () => routesService.list(), enabled: open });
+  const { data: routes } = useQuery({ queryKey: ['routes', scopeKey], queryFn: () => routesService.list(scopeAgencyId), enabled: open });
   const { data: driversData } = useQuery({ queryKey: ['drivers', user?.agencyId ?? 'all'], queryFn: () => driversService.list(user?.agencyId), enabled: open });
   const drivers = driversData?.drivers ?? [];
 
