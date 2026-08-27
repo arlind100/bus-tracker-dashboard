@@ -32,8 +32,7 @@ async function fetchStats(scopeAgencyId?: string, currentUid?: string): Promise<
       getDocs(query(collection(db, COLLECTIONS.adminUpdates), orderBy('createdAt', 'desc'), limit(24))),
     ]);
 
-  // Everything below counts the SCOPED rows, so an agency admin's dashboard is
-  // their own operation rather than the platform's.
+  // Everything below counts the scoped rows, not the whole platform's.
   const agencies = scopeAgencyId
     ? agenciesSnap.docs.filter(d => d.id === scopeAgencyId)
     : agenciesSnap.docs;
@@ -74,10 +73,8 @@ async function fetchStats(scopeAgencyId?: string, currentUid?: string): Promise<
     if (r.status === 'resolved' || r.status === 'closed') resolvedIssueReports++;
   });
 
-  // The audit trail carries no agencyId, so it cannot be filtered by agency.
-  // A scoped admin therefore sees their OWN actions rather than the platform's —
-  // showing every agency's activity on a scoped dashboard would leak exactly
-  // what the scope exists to prevent.
+  // The audit trail carries no agencyId, so a scoped admin sees their own actions
+  // rather than every agency's.
   const adminUpdates = updatesSnap.docs.map(d => toDoc<AdminUpdate>(d));
   const recentAdminUpdates = (scopeAgencyId
     ? adminUpdates.filter(u => u.adminUid === currentUid)
@@ -110,11 +107,7 @@ async function fetchStats(scopeAgencyId?: string, currentUid?: string): Promise<
 }
 
 export const dashboardService = {
-  /**
-   * @param scopeAgencyId restricts every figure to one agency. Undefined for a
-   *   super admin, whose dashboard is the whole platform.
-   * @param currentUid    the caller, used to narrow the audit trail when scoped.
-   */
+  /** `scopeAgencyId` restricts every figure to one agency; undefined for a super admin. */
   async getStats(scopeAgencyId?: string, currentUid?: string): Promise<DashboardStats> {
     const result = await withTimeout(fetchStats(scopeAgencyId, currentUid));
     if (result === TIMEOUT) {

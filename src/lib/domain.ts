@@ -1,6 +1,5 @@
-// Shared display metadata for the domain enums — labels, badge variants, and
-// chart colors. Centralized so every page renders statuses identically and the
-// exact mobile enum values stay the single source of truth.
+// Labels, badge variants and chart colors for the domain enums, so every page
+// renders a status identically.
 
 import type { BadgeProps } from '@/components/ui/badge';
 import type {

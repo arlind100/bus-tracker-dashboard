@@ -1,16 +1,11 @@
 /**
- * Agency scoping.
+ * Agency scoping. A super admin sees the whole platform; an agency admin sees
+ * only their own agency's records. `undefined` means "no scope" (super admin).
  *
- * A super admin sees the whole platform. An agency admin sees only their own
- * agency's records, and `undefined` means "no scope" — the super-admin case.
- *
- * Filtering happens here rather than in a Firestore `where()` clause on purpose.
- * The transit collections are publicly readable, because the passenger app needs
- * them without signing in, so a server-side filter would buy no confidentiality —
- * only fewer reads. What it would buy is a failure mode: `where('agencyId','==',x)`
- * silently drops every document whose agencyId is absent or empty, which is
- * exactly how an unowned record disappears from the one screen meant to manage it.
- * Doing it in memory keeps that decision explicit, per collection.
+ * Filtered in memory rather than with a Firestore `where()` clause: the transit
+ * collections are publicly readable anyway, and `where('agencyId','==',x)`
+ * silently drops documents whose agencyId is absent, hiding unowned records
+ * from the one screen meant to manage them.
  */
 
 export type AgencyScope = string | undefined;
@@ -22,11 +17,8 @@ export function scopeOwned<T extends { agencyId?: string }>(items: T[], scope: A
 }
 
 /**
- * Records owned by one agency, PLUS unowned ones.
- *
- * For broadcasts: a notification with no agencyId is a platform-wide
- * announcement, and hiding it from the agencies it is addressed to would defeat
- * the point of sending it.
+ * Records owned by one agency, plus unowned ones. A notification with no
+ * agencyId is a platform-wide broadcast and must stay visible to every agency.
  */
 export function scopeOwnedOrGlobal<T extends { agencyId?: string }>(
   items: T[],

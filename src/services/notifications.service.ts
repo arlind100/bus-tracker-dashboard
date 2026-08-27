@@ -32,8 +32,7 @@ export const notificationsService = {
     const snap = await getDocs(
       query(collection(db, COLLECTIONS.notifications), orderBy('createdAt', 'desc')),
     );
-    // Broadcasts carry no agencyId and are addressed to everyone, so an agency
-    // admin sees those alongside their own.
+    // Broadcasts carry no agencyId, so a scoped admin sees those alongside their own.
     return scopeOwnedOrGlobal(snap.docs.map(d => toDoc<Notification>(d)), scopeAgencyId);
   },
 

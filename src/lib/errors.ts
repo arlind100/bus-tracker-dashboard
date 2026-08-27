@@ -5,12 +5,7 @@ interface CodedError {
   message?: string;
 }
 
-/**
- * Maps a Firebase/Firestore error to a clear message, so an operator is never
- * left staring at a raw "permission-denied". The security rules are deployed and
- * verified, so a denial now means the ACCOUNT lacks the tier or agency scope —
- * the message says which.
- */
+/** Maps a Firebase error to a message naming the tier or agency scope that is missing. */
 export function describeFirebaseError(err: unknown, context?: 'admins' | 'schedules' | 'agency'): string {
   const e = err as CodedError;
   const code = e?.code ?? '';

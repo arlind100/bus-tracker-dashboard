@@ -55,8 +55,7 @@ export interface AgencyDetail {
 }
 
 export const agenciesService = {
-  // An agency is identified by its own document id, so the scope is matched
-  // against `id` here rather than against an `agencyId` field.
+  // An agency is keyed by its own document id, so the scope matches `id`, not `agencyId`.
   async list(scopeAgencyId?: string): Promise<Agency[]> {
     const snap = await getDocs(collection(db, COLLECTIONS.agencies));
     return snap.docs

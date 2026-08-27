@@ -6,17 +6,13 @@ export interface AgencyFilter {
   scopeAgencyId: AgencyScope;
   /**
    * Cache key fragment. Every scoped query MUST include this, or React Query
-   * serves one account's cached rows to the next account signed in on the same
-   * browser — the scope would be right on the wire and wrong on screen.
+   * serves one account's cached rows to the next account in the same browser.
    */
   scopeKey: string;
   isScoped: boolean;
 }
 
-/**
- * Who the current admin is allowed to see. The single place that decision is
- * made, so a screen cannot accidentally invent its own rule.
- */
+/** The single place the "what may this admin see" decision is made. */
 export function useAgencyFilter(): AgencyFilter {
   const { user } = useAuth();
   const scopeAgencyId =

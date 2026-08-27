@@ -1,10 +1,4 @@
 // Shared Firestore helpers for the dashboard service layer.
-//
-// Mirrors patterns proven in the mobile app's admin.service.ts:
-//   - a document-read timeout so a hung network never blocks the UI forever
-//   - id → name maps for client-side denormalization (no server joins)
-//   - a single audit-log writer so every mutating action leaves an adminUpdates
-//     entry (matching the canonical AdminUpdate shape: adminUid + action + detail)
 
 import {
   collection,
@@ -21,10 +15,7 @@ export const FETCH_TIMEOUT_MS = 8000;
 /** A sentinel returned when a promise loses the race against the timeout. */
 export const TIMEOUT = Symbol('timeout');
 
-/**
- * Races a promise against FETCH_TIMEOUT_MS. Resolves to the value, or the
- * TIMEOUT sentinel — callers decide how to degrade. Never rejects on timeout.
- */
+/** Races a promise against FETCH_TIMEOUT_MS, resolving to TIMEOUT rather than rejecting. */
 export async function withTimeout<T>(
   promise: Promise<T>,
   ms: number = FETCH_TIMEOUT_MS,
@@ -64,11 +55,7 @@ export async function fetchNameMap(
   }
 }
 
-/**
- * Appends an entry to the adminUpdates audit log. Best-effort: an audit-write
- * failure must never fail the primary mutation, so this swallows errors.
- * Writes `adminUid` (the canonical AdminUpdate field) — not `adminName`.
- */
+/** Appends to the adminUpdates audit log. Best-effort: never fails the primary mutation. */
 export async function logAdminUpdate(input: {
   adminUid: string;
   action: string;
